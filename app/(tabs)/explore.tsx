@@ -38,7 +38,7 @@ export default function ExploreScreen() {
                 <Text style={styles.factCity}>{city?.name}</Text>
                 <Text style={styles.factStat}>{fact.stat}</Text>
               </View>
-              <Text style={styles.factText}>{fact.fact}</Text>
+              <Text style={styles.factText} numberOfLines={4}>{fact.fact}</Text>
             </View>
           );
         })}
@@ -143,10 +143,11 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   tileScoreLabel: {
-    fontSize: 9,
+    fontSize: 11,
     letterSpacing: 2,
     color: theme.colors.textTertiary,
     fontWeight: theme.font.weights.semibold,
+    lineHeight: 15,
   },
   tileName: {
     fontSize: theme.font.sizes.xxl,

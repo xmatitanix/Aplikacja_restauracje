@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.xl,
   },
   footerText: {
-    fontSize: 9,
+    fontSize: 11,
     letterSpacing: 3,
     color: theme.colors.textTertiary,
     fontWeight: theme.font.weights.semibold,

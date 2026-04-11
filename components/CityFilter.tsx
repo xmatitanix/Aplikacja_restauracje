@@ -51,6 +51,7 @@ function CityPill({
         active && styles.pillActive,
         pressed && styles.pillPressed,
       ]}
+      hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
     >
       <Text style={[styles.label, active && styles.labelActive]}>{label}</Text>
     </Pressable>
@@ -67,10 +68,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     gap: theme.spacing.xs,
+    alignItems: 'center',
   },
   pill: {
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
+    paddingVertical: 10,
+    minHeight: 44,
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,

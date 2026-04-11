@@ -160,11 +160,12 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   heroStatLabel: {
-    fontSize: 9,
+    fontSize: 11,
     letterSpacing: 2,
     color: theme.colors.textTertiary,
     fontWeight: theme.font.weights.semibold,
     marginTop: 2,
+    lineHeight: 15,
   },
 
   // Venue block

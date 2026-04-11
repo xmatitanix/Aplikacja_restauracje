@@ -73,7 +73,7 @@ export default function EventDetailScreen() {
         {event.description && (
           <View style={styles.descBlock}>
             <Text style={styles.descLabel}>// OPIS</Text>
-            <Text style={styles.descText}>{event.description}</Text>
+            <Text style={styles.descText} numberOfLines={6}>{event.description}</Text>
           </View>
         )}
 
@@ -133,7 +133,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
+      <Text style={styles.infoValue} numberOfLines={2}>{value}</Text>
     </View>
   );
 }
@@ -210,15 +210,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: 12,
+    minHeight: 44,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
+    gap: theme.spacing.md,
   },
   infoLabel: {
     fontSize: theme.font.sizes.xs,
     fontWeight: theme.font.weights.semibold,
     letterSpacing: theme.font.letterSpacing.wider,
     color: theme.colors.textTertiary,
+    flexShrink: 0,
   },
   infoValue: {
     fontSize: theme.font.sizes.sm,
@@ -226,6 +229,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.font.weights.medium,
     flex: 1,
     textAlign: 'right',
+    lineHeight: 18,
   },
 
   // Description
