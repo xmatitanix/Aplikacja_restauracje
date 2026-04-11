@@ -1,18 +1,14 @@
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../../constants/theme';
 import { ENERGY_ARCS, getEventById, VIBE_TAGS } from '../../data/events';
@@ -57,11 +53,19 @@ export default function RateScreen() {
   const stepIndex = STEPS.indexOf(step);
   const progress = (stepIndex / (STEPS.length - 1)) * 100;
 
-  const progressAnim = useSharedValue(progress);
+  const progressAnim = useRef(new Animated.Value(progress)).current;
 
-  const progressStyle = useAnimatedStyle(() => ({
-    width: `${progressAnim.value}%`,
-  }));
+  useEffect(() => {
+    Animated.spring(progressAnim, {
+      toValue: progress,
+      useNativeDriver: false,
+    }).start();
+  }, [progress]);
+
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 100],
+    outputRange: ['0%', '100%'],
+  });
 
   if (!event) {
     return (
@@ -76,7 +80,6 @@ export default function RateScreen() {
     if (idx < STEPS.length - 1) {
       const next = STEPS[idx + 1];
       setStep(next);
-      progressAnim.value = withSpring(((idx + 1) / (STEPS.length - 1)) * 100);
     }
   }
 
@@ -85,7 +88,6 @@ export default function RateScreen() {
     if (idx > 0) {
       const prev = STEPS[idx - 1];
       setStep(prev);
-      progressAnim.value = withSpring(((idx - 1) / (STEPS.length - 1)) * 100);
     } else {
       router.back();
     }
@@ -135,7 +137,7 @@ export default function RateScreen() {
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       {/* Progress */}
       <View style={styles.progressTrack}>
-        <Animated.View style={[styles.progressFill, progressStyle]} />
+        <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
       </View>
 
       {/* Step header */}
