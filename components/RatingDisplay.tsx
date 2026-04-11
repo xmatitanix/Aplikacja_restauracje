@@ -73,7 +73,10 @@ export function RatingDisplay({ data }: Props) {
               style={[styles.arcRow, dominant && styles.arcRowDominant]}
             >
               <Text style={styles.arcShape}>{arc.shape}</Text>
-              <Text style={[styles.arcLabel, dominant && styles.arcLabelDominant]}>
+              <Text
+                style={[styles.arcLabel, dominant && styles.arcLabelDominant]}
+                numberOfLines={1}
+              >
                 {arc.label}
               </Text>
               <View style={styles.arcBarTrack}>
@@ -107,7 +110,7 @@ export function RatingDisplay({ data }: Props) {
           label="SELECTION"
           score={normalizeSelection(data.avgSelectionStyle)}
           low="safe"
-          high="experimental"
+          high="exp."
         />
       </View>
 
@@ -121,7 +124,7 @@ export function RatingDisplay({ data }: Props) {
               return (
                 <View key={tag} style={styles.tagItem}>
                   <View style={styles.tagHeader}>
-                    <Text style={styles.tagName}>{tag}</Text>
+                    <Text style={styles.tagName} numberOfLines={1}>{tag}</Text>
                     <Text style={styles.tagPct}>{pct}%</Text>
                   </View>
                   <View style={styles.tagTrack}>
@@ -140,7 +143,7 @@ export function RatingDisplay({ data }: Props) {
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.metaRow}>
-      <Text style={styles.metaLabel}>{label}</Text>
+      <Text style={styles.metaLabel} numberOfLines={1}>{label}</Text>
       <Text style={styles.metaValue}>{value}</Text>
     </View>
   );
@@ -162,11 +165,11 @@ function ScoreRow({
     <View style={styles.scoreRow}>
       <Text style={styles.scoreRowLabel}>{label}</Text>
       <View style={styles.scoreRowBody}>
-        <Text style={styles.spectrumLabel}>{low}</Text>
+        <Text style={styles.spectrumLabel} numberOfLines={1}>{low}</Text>
         <View style={styles.scoreBarTrack}>
           <View style={[styles.scoreBarFill, { width: `${pct}%` }]} />
         </View>
-        <Text style={styles.spectrumLabel}>{high}</Text>
+        <Text style={styles.spectrumLabel} numberOfLines={1}>{high}</Text>
         <Text style={styles.scoreRowNum}>{score.toFixed(1)}</Text>
       </View>
     </View>
@@ -178,7 +181,6 @@ function getDominantArc(dist: Record<EnergyArc, number>): EnergyArc {
 }
 
 function normalizeSelection(avg: number): number {
-  // converts -2..+2 range to 1..5 range
   return ((avg + 2) / 4) * 4 + 1;
 }
 
@@ -221,7 +223,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.font.weights.black,
     color: theme.colors.text,
     fontVariant: ['tabular-nums'],
-    lineHeight: 56,
+    lineHeight: 60,
   },
   bigScoreOf: {
     fontSize: theme.font.sizes.xl,
@@ -236,12 +238,14 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: theme.spacing.sm,
   },
   metaLabel: {
     fontSize: theme.font.sizes.xs,
     color: theme.colors.textTertiary,
     letterSpacing: theme.font.letterSpacing.wider,
     fontWeight: theme.font.weights.semibold,
+    flexShrink: 1,
   },
   metaValue: {
     fontSize: theme.font.sizes.sm,
@@ -270,6 +274,7 @@ const styles = StyleSheet.create({
     fontSize: theme.font.sizes.xs,
     color: theme.colors.textTertiary,
     fontStyle: 'italic',
+    lineHeight: 18,
   },
 
   // Arc
@@ -278,7 +283,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.spacing.sm,
     marginBottom: theme.spacing.xs,
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   arcRowDominant: {
     backgroundColor: theme.colors.accentLight,
@@ -290,22 +295,24 @@ const styles = StyleSheet.create({
   arcShape: {
     fontSize: theme.font.sizes.sm,
     color: theme.colors.textTertiary,
-    width: 40,
     fontFamily: 'monospace',
+    flexShrink: 0,
+    minWidth: 44,
   },
   arcLabel: {
     fontSize: theme.font.sizes.xs,
     letterSpacing: theme.font.letterSpacing.wide,
     color: theme.colors.textSecondary,
-    width: 100,
     fontWeight: theme.font.weights.medium,
+    flex: 1,
+    minWidth: 80,
   },
   arcLabelDominant: {
     color: theme.colors.text,
     fontWeight: theme.font.weights.bold,
   },
   arcBarTrack: {
-    flex: 1,
+    flex: 2,
     height: 2,
     backgroundColor: theme.colors.border,
   },
@@ -317,7 +324,8 @@ const styles = StyleSheet.create({
     fontSize: theme.font.sizes.xs,
     color: theme.colors.textSecondary,
     fontVariant: ['tabular-nums'],
-    width: 30,
+    flexShrink: 0,
+    minWidth: 32,
     textAlign: 'right',
   },
   arcNote: {
@@ -325,6 +333,7 @@ const styles = StyleSheet.create({
     color: theme.colors.textTertiary,
     fontStyle: 'italic',
     marginTop: theme.spacing.sm,
+    lineHeight: 18,
   },
 
   // Score rows
@@ -336,7 +345,7 @@ const styles = StyleSheet.create({
     letterSpacing: theme.font.letterSpacing.wider,
     color: theme.colors.textTertiary,
     fontWeight: theme.font.weights.semibold,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   scoreRowBody: {
     flexDirection: 'row',
@@ -346,7 +355,8 @@ const styles = StyleSheet.create({
   spectrumLabel: {
     fontSize: theme.font.sizes.xs,
     color: theme.colors.textTertiary,
-    width: 56,
+    flexShrink: 0,
+    minWidth: 40,
   },
   scoreBarTrack: {
     flex: 1,
@@ -362,7 +372,8 @@ const styles = StyleSheet.create({
     fontWeight: theme.font.weights.bold,
     color: theme.colors.text,
     fontVariant: ['tabular-nums'],
-    width: 24,
+    flexShrink: 0,
+    minWidth: 28,
     textAlign: 'right',
   },
 
@@ -374,17 +385,21 @@ const styles = StyleSheet.create({
   tagHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    alignItems: 'center',
+    marginBottom: 5,
+    gap: theme.spacing.sm,
   },
   tagName: {
     fontSize: theme.font.sizes.sm,
     color: theme.colors.text,
     fontWeight: theme.font.weights.medium,
+    flex: 1,
   },
   tagPct: {
     fontSize: theme.font.sizes.sm,
     color: theme.colors.textSecondary,
     fontVariant: ['tabular-nums'],
+    flexShrink: 0,
   },
   tagTrack: {
     height: 2,
