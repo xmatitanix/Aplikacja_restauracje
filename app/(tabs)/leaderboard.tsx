@@ -181,12 +181,13 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   statLabel: {
-    fontSize: 9,
+    fontSize: 11,
     letterSpacing: 1.5,
     color: theme.colors.textTertiary,
     fontWeight: theme.font.weights.semibold,
     textAlign: 'center',
     marginTop: 2,
+    lineHeight: 15,
   },
   factBanner: {
     margin: theme.spacing.md,
