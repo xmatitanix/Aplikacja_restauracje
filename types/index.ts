@@ -54,6 +54,16 @@ export interface Rating {
   timestamp: number;
 }
 
+export interface SupportRating {
+  id: string; // `${eventId}__${actName}`
+  eventId: string;
+  actName: string;
+  overall: 1 | 2 | 3 | 4 | 5;
+  tags: string[];
+  wasPresent: boolean;
+  timestamp: number;
+}
+
 export interface AggregatedRatings {
   count: number;
   avgOverall: number;
@@ -71,4 +81,17 @@ export interface CityFact {
   cityId: CityId;
   fact: string;
   stat: string;
+}
+
+// Validation helpers
+export function isValidEventId(id: unknown): id is string {
+  return typeof id === 'string' && /^[a-z0-9_-]{1,50}$/.test(id);
+}
+
+export function isValidActName(name: unknown): name is string {
+  return typeof name === 'string' && name.length > 0 && name.length <= 100;
+}
+
+export function sanitizeActName(name: string): string {
+  return name.replace(/[^a-zA-ZÀ-ž0-9\s\-'.]/g, '').trim().slice(0, 100);
 }

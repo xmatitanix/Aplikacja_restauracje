@@ -1,11 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
-import { Rating } from '../types';
+import { SupportRating } from '../types';
 
-const STORAGE_KEY = 'setlog_ratings';
+const STORAGE_KEY = 'setlog_support_ratings';
 
-export function useRatings() {
-  const [ratings, setRatings] = useState<Record<string, Rating>>({});
+function makeSupportId(eventId: string, actName: string): string {
+  return `${eventId}__${encodeURIComponent(actName)}`;
+}
+
+export function useSupportRatings() {
+  const [ratings, setRatings] = useState<Record<string, SupportRating>>({});
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -33,8 +37,8 @@ export function useRatings() {
   }, []);
 
   const saveRating = useCallback(
-    async (rating: Rating) => {
-      const updated = { ...ratings, [rating.eventId]: rating };
+    async (rating: SupportRating) => {
+      const updated = { ...ratings, [rating.id]: rating };
       setRatings(updated);
       try {
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -46,19 +50,16 @@ export function useRatings() {
   );
 
   const getRating = useCallback(
-    (eventId: string): Rating | undefined => ratings[eventId],
+    (eventId: string, actName: string): SupportRating | undefined =>
+      ratings[makeSupportId(eventId, actName)],
     [ratings]
   );
 
   const hasRated = useCallback(
-    (eventId: string): boolean => !!ratings[eventId],
+    (eventId: string, actName: string): boolean =>
+      !!ratings[makeSupportId(eventId, actName)],
     [ratings]
   );
 
-  const getRatedCount = useCallback(
-    () => Object.keys(ratings).length,
-    [ratings]
-  );
-
-  return { ratings, saveRating, getRating, hasRated, getRatedCount, loaded };
+  return { ratings, saveRating, getRating, hasRated, loaded, makeSupportId };
 }
