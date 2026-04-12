@@ -68,6 +68,15 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="add"
+        options={{
+          title: 'DODAJ SET',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon label="+ ADD" focused={focused} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
