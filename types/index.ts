@@ -1,3 +1,6 @@
+export const AGE_GROUPS = ['<20', '20-25', '25-30', '30-40', '40+'] as const;
+export type AgeGroup = typeof AGE_GROUPS[number];
+
 export interface DJEvent {
   id: string;
   djName: string;
@@ -51,6 +54,7 @@ export interface Rating {
   crowdSync: 1 | 2 | 3 | 4 | 5;
   tags: string[];
   wasPresent: boolean;
+  ageGroup?: AgeGroup;
   timestamp: number;
 }
 
@@ -75,6 +79,7 @@ export interface AggregatedRatings {
   tagCounts: Record<string, number>;
   presentPct: number;
   consensusScore: number;
+  ageGroupDist: Record<string, number>;
 }
 
 export interface CityFact {

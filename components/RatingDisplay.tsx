@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { theme } from '../constants/theme';
 import { ENERGY_ARCS } from '../data/events';
-import { AggregatedRatings, EnergyArc } from '../types';
+import { AGE_GROUPS, AggregatedRatings, EnergyArc } from '../types';
 
 interface Props {
   data: AggregatedRatings;
@@ -134,6 +134,30 @@ export function RatingDisplay({ data }: Props) {
               );
             })}
           </View>
+        </View>
+      )}
+
+      {/* Crowd Age */}
+      {Object.keys(data.ageGroupDist).length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>// CROWD AGE</Text>
+          {AGE_GROUPS.map((group) => {
+            const count = data.ageGroupDist[group] ?? 0;
+            const total = Object.values(data.ageGroupDist).reduce((s, n) => s + n, 0);
+            const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+            return (
+              <View key={group} style={styles.ageRow}>
+                <Text style={styles.ageGroupLabel}>{group}</Text>
+                <View style={styles.ageBarTrack}>
+                  <View style={[styles.ageBarFill, { width: `${pct}%` }]} />
+                </View>
+                <Text style={styles.agePct}>{pct}%</Text>
+              </View>
+            );
+          })}
+          <Text style={styles.ageNote}>
+            // Dane anonimowe — oparte na ocenach użytkowników
+          </Text>
         </View>
       )}
     </View>
@@ -408,5 +432,47 @@ const styles = StyleSheet.create({
   tagFill: {
     height: '100%',
     backgroundColor: theme.colors.textSecondary,
+  },
+
+  // Crowd age
+  ageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
+    paddingVertical: 4,
+  },
+  ageGroupLabel: {
+    fontSize: theme.font.sizes.xs,
+    color: theme.colors.textSecondary,
+    fontWeight: theme.font.weights.semibold,
+    letterSpacing: theme.font.letterSpacing.wide,
+    flexShrink: 0,
+    minWidth: 44,
+    fontVariant: ['tabular-nums'],
+  },
+  ageBarTrack: {
+    flex: 1,
+    height: 2,
+    backgroundColor: theme.colors.border,
+  },
+  ageBarFill: {
+    height: '100%',
+    backgroundColor: theme.colors.textSecondary,
+  },
+  agePct: {
+    fontSize: theme.font.sizes.xs,
+    color: theme.colors.textSecondary,
+    fontVariant: ['tabular-nums'],
+    flexShrink: 0,
+    minWidth: 32,
+    textAlign: 'right',
+  },
+  ageNote: {
+    fontSize: theme.font.sizes.xs,
+    color: theme.colors.textTertiary,
+    fontStyle: 'italic',
+    marginTop: theme.spacing.sm,
+    lineHeight: 18,
   },
 });
