@@ -515,10 +515,10 @@ function PresenceStep({
             value === true && styles.presenceLabelSelected,
           ]}
         >
-          BYŁEM/AM TAM
+          BYŁEM/BYŁAM TAM
         </Text>
         <Text style={styles.presenceDesc}>
-          Słyszałem/am na żywo, w klubie
+          Słyszałem/słyszałam na żywo, w klubie
         </Text>
       </Pressable>
 
@@ -532,7 +532,7 @@ function PresenceStep({
             value === false && styles.presenceLabelSelected,
           ]}
         >
-          SŁYSZAŁEM/AM ONLINE
+          SŁYSZAŁEM/SŁYSZAŁAM ONLINE
         </Text>
         <Text style={styles.presenceDesc}>
           Stream, nagranie, SoundCloud, YouTube

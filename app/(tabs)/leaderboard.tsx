@@ -61,7 +61,7 @@ export default function LeaderboardScreen() {
         <View style={styles.factBanner}>
           <Text style={styles.factBannerLabel}>// DID YOU KNOW</Text>
           <Text style={styles.factBannerText}>
-            Badania pokazują, że 73% słuchaczy nie rozpozna złego mixu,
+            Badania pokazują, że 73% słuchaczy nie rozpoznaje złego miksu,
             jeśli track selection jest dobry. Twoje tagi mają większe
             znaczenie niż myślisz.
           </Text>

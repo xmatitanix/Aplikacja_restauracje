@@ -150,7 +150,7 @@ export default function EventDetailScreen() {
               <Text style={styles.myRatingScore}>{myRating.overall}</Text>
               <Text style={styles.myRatingOf}>/5</Text>
               <Text style={styles.myRatingPresent}>
-                {myRating.wasPresent ? '· BYŁEM/AM' : '· ONLINE'}
+                {myRating.wasPresent ? '· BYŁEM/BYŁAM' : '· ONLINE'}
               </Text>
             </View>
             {myRating.tags.length > 0 && (
