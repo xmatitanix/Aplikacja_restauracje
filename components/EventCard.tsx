@@ -8,9 +8,10 @@ interface Props {
   onPress: () => void;
   variant?: 'default' | 'featured' | 'compact';
   index?: number;
+  isUserAdded?: boolean;
 }
 
-export function EventCard({ event, onPress, variant = 'default', index = 0 }: Props) {
+export function EventCard({ event, onPress, variant = 'default', index = 0, isUserAdded = false }: Props) {
   const num = String(index + 1).padStart(3, '0');
   const topTag = getTopTag(event);
 
@@ -133,6 +134,9 @@ export function EventCard({ event, onPress, variant = 'default', index = 0 }: Pr
       <View style={styles.cardHeader}>
         <Text style={styles.indexLabel}>{num}</Text>
         <View style={styles.genreRow}>
+          {isUserAdded && (
+            <Text style={styles.userBadge}>+ USER</Text>
+          )}
           {event.genres.slice(0, 2).map((g) => (
             <Text key={g} style={styles.genre} numberOfLines={1}>
               {g}
@@ -401,6 +405,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: theme.spacing.xs,
     marginTop: theme.spacing.sm,
+  },
+  userBadge: {
+    fontSize: theme.font.sizes.xs,
+    color: theme.colors.textSecondary,
+    letterSpacing: theme.font.letterSpacing.wide,
+    fontWeight: theme.font.weights.bold,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
   },
   genre: {
     fontSize: theme.font.sizes.xs,
