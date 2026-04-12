@@ -21,6 +21,7 @@ import {
   getTrendingEvents,
 } from '../../data/events';
 import { useRatings } from '../../hooks/useRatings';
+import { useSubmittedEvents } from '../../hooks/useSubmittedEvents';
 import { CityId } from '../../types';
 
 type SortBy = 'recent' | 'rating' | 'popular';
@@ -32,38 +33,67 @@ const featured = trending[0];
 export default function HomeScreen() {
   const router = useRouter();
   const [selectedCity, setSelectedCity] = useState<CityId | 'all'>('all');
-  const [selectedGenre, setSelectedGenre] = useState<string>('all');
+  const [selectedMacro, setSelectedMacro] = useState<string>('all');
+  const [selectedSubGenre, setSelectedSubGenre] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortBy>('recent');
   const [onlyUnrated, setOnlyUnrated] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const { getRatedCount, hasRated } = useRatings();
+  const { events: submittedEvents } = useSubmittedEvents();
 
   const handleCitySelect = useCallback((city: CityId | 'all') => {
     setSelectedCity(city);
-    setSelectedGenre('all');
+    setSelectedMacro('all');
+    setSelectedSubGenre(null);
   }, []);
 
-  const cityEvents = useMemo(() => getEventsByCity(selectedCity), [selectedCity]);
+  const handleMacroSelect = useCallback((macro: string) => {
+    setSelectedMacro(macro);
+    setSelectedSubGenre(null);
+  }, []);
+
+  const cityEvents = useMemo(() => {
+    const base = getEventsByCity(selectedCity);
+    const userFiltered =
+      selectedCity === 'all'
+        ? submittedEvents
+        : submittedEvents.filter((e) => e.city === selectedCity);
+    return [...base, ...userFiltered];
+  }, [selectedCity, submittedEvents]);
 
   const availableGenres = useMemo(
     () => getAvailableMacroGenres(cityEvents),
     [cityEvents]
   );
 
+  const availableSubGenres = useMemo(() => {
+    if (selectedMacro === 'all') return [];
+    const macroSubs = GENRE_GROUPS[selectedMacro] ?? [];
+    const present = new Set<string>();
+    cityEvents.forEach((e) => e.genres.forEach((g) => present.add(g)));
+    return macroSubs.filter((g) => present.has(g));
+  }, [selectedMacro, cityEvents]);
+
   const hasActiveFilters =
-    selectedCity !== 'all' || selectedGenre !== 'all' || onlyUnrated;
+    selectedCity !== 'all' || selectedMacro !== 'all' || onlyUnrated;
 
   const events = useMemo(() => {
     let list = cityEvents;
-    if (selectedGenre !== 'all') {
-      const subGenres = GENRE_GROUPS[selectedGenre];
-      list = subGenres
-        ? list.filter((e) => e.genres.some((g) => subGenres.includes(g)))
-        : list.filter((e) => e.genres.includes(selectedGenre));
+
+    if (selectedMacro !== 'all') {
+      const macroSubs = GENRE_GROUPS[selectedMacro];
+      if (macroSubs) {
+        list = list.filter((e) => e.genres.some((g) => macroSubs.includes(g)));
+      }
+      if (selectedSubGenre) {
+        list = list.filter((e) => e.genres.includes(selectedSubGenre));
+      }
     }
+
     if (onlyUnrated) {
       list = list.filter((e) => !hasRated(e.id));
     }
+
     const sorted = [...list];
     if (sortBy === 'rating') {
       sorted.sort((a, b) => b.ratingData.avgOverall - a.ratingData.avgOverall);
@@ -75,11 +105,11 @@ export default function HomeScreen() {
       );
     }
     return sorted;
-  }, [cityEvents, selectedGenre, onlyUnrated, hasRated, sortBy]);
+  }, [cityEvents, selectedMacro, selectedSubGenre, onlyUnrated, hasRated, sortBy]);
 
   const showFeatured =
     selectedCity === 'all' &&
-    selectedGenre === 'all' &&
+    selectedMacro === 'all' &&
     !onlyUnrated &&
     sortBy === 'recent' &&
     !!featured;
@@ -91,8 +121,10 @@ export default function HomeScreen() {
       ? 'MOST POPULAR'
       : showFeatured
       ? 'RECENT SETS'
-      : selectedGenre !== 'all'
-      ? selectedGenre
+      : selectedSubGenre
+      ? selectedSubGenre.toUpperCase()
+      : selectedMacro !== 'all'
+      ? selectedMacro
       : selectedCity !== 'all'
       ? 'SETS IN CITY'
       : 'ALL SETS';
@@ -104,7 +136,8 @@ export default function HomeScreen() {
 
   const clearFilters = useCallback(() => {
     setSelectedCity('all');
-    setSelectedGenre('all');
+    setSelectedMacro('all');
+    setSelectedSubGenre(null);
     setOnlyUnrated(false);
   }, []);
 
@@ -140,9 +173,12 @@ export default function HomeScreen() {
         <View style={styles.filterArea}>
           <CityFilter selected={selectedCity} onSelect={handleCitySelect} />
           <GenreFilter
-            genres={availableGenres}
-            selected={selectedGenre}
-            onSelect={setSelectedGenre}
+            macros={availableGenres}
+            selectedMacro={selectedMacro}
+            onSelectMacro={handleMacroSelect}
+            subGenres={availableSubGenres}
+            selectedSubGenre={selectedSubGenre}
+            onSelectSubGenre={setSelectedSubGenre}
           />
           <SortBar
             sortBy={sortBy}
@@ -189,6 +225,7 @@ export default function HomeScreen() {
                   key={event.id}
                   event={event}
                   index={i}
+                  isUserAdded={event.id.startsWith('user_')}
                   onPress={() => router.push(`/event/${event.id}`)}
                 />
               ))
@@ -283,15 +320,9 @@ function SortBar({
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  scroll: {
-    flex: 1,
-  },
+  safe: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { flex: 1 },
 
-  // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -330,17 +361,10 @@ const styles = StyleSheet.create({
     color: theme.colors.textTertiary,
     fontWeight: theme.font.weights.semibold,
   },
-  divider: {
-    height: 1,
-    backgroundColor: theme.colors.border,
-  },
+  divider: { height: 1, backgroundColor: theme.colors.border },
 
-  // Sticky filter area
-  filterArea: {
-    backgroundColor: theme.colors.background,
-  },
+  filterArea: { backgroundColor: theme.colors.background },
 
-  // Sort bar
   sortBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -353,15 +377,8 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
     gap: theme.spacing.sm,
   },
-  sortGroup: {
-    flexDirection: 'row',
-    gap: theme.spacing.xs,
-  },
-  sortRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-  },
+  sortGroup: { flexDirection: 'row', gap: theme.spacing.xs },
+  sortRight: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
   sortPill: {
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 5,
@@ -381,9 +398,7 @@ const styles = StyleSheet.create({
     letterSpacing: theme.font.letterSpacing.wide,
     color: theme.colors.textTertiary,
   },
-  sortPillTextActive: {
-    color: theme.colors.white,
-  },
+  sortPillTextActive: { color: theme.colors.white },
   clearBtn: {
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 5,
@@ -397,11 +412,7 @@ const styles = StyleSheet.create({
     color: theme.colors.textTertiary,
   },
 
-  // Content
-  empty: {
-    padding: theme.spacing.xxxl,
-    alignItems: 'center',
-  },
+  empty: { padding: theme.spacing.xxxl, alignItems: 'center' },
   emptyText: {
     fontSize: theme.font.sizes.xl,
     fontWeight: theme.font.weights.black,
