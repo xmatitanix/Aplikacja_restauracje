@@ -123,7 +123,7 @@ export default function RateScreen() {
 
     await saveRating(rating);
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.replace(`/event/${event!.id}`);
+    router.replace('/(tabs)');
   }
 
   function canProceed(): boolean {

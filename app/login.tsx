@@ -45,11 +45,11 @@ export default function LoginScreen() {
 
     if (mode === 'login') {
       const { error: err } = await signIn(email, password);
+      setLoading(false);
       if (err) {
         setError(translateError(err.message));
-        setLoading(false);
       } else {
-        router.back();
+        router.replace('/(tabs)');
       }
     } else {
       const { error: err } = await signUp(email, password);
