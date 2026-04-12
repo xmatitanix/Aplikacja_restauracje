@@ -29,7 +29,6 @@ export default function TabLayout() {
         headerShadowVisible: false,
         headerTitleStyle: {
           fontWeight: '700',
-          letterSpacing: 3,
           fontSize: 13,
         },
         tabBarStyle: {
