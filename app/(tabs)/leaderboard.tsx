@@ -11,42 +11,59 @@ import {
 } from '../../data/events';
 import { useRatings } from '../../hooks/useRatings';
 
+// Static data — computed once, never changes
+const topSets = getTopRatedEvents();
+const divisive = getMostDivisiveEvents();
+const TOTAL_RATINGS = MOCK_EVENTS.reduce((s, e) => s + e.ratingData.count, 0);
+const AVG_CONSENSUS = Math.round(
+  MOCK_EVENTS.reduce((s, e) => s + e.ratingData.consensusScore, 0) /
+    MOCK_EVENTS.length
+);
+
 export default function LeaderboardScreen() {
   const router = useRouter();
   const { ratings, getRatedCount } = useRatings();
-  const topSets = getTopRatedEvents();
-  const divisive = getMostDivisiveEvents();
-
-  const totalRatings = MOCK_EVENTS.reduce(
-    (s, e) => s + e.ratingData.count,
-    0
-  );
-  const avgConsensus = Math.round(
-    MOCK_EVENTS.reduce((s, e) => s + e.ratingData.consensusScore, 0) /
-      MOCK_EVENTS.length
-  );
+  const myRatingsArr = Object.values(ratings) as { overall: number; wasPresent: boolean }[];
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView style={styles.scroll}>
-        {/* Global Stats */}
-        <View style={styles.globalStats}>
-          <Text style={styles.globalTitle}>PLATFORM STATS</Text>
-          <View style={styles.statsGrid}>
-            <StatBlock num={MOCK_EVENTS.length.toString()} label="TOTAL SETS" />
-            <StatBlock num={totalRatings.toLocaleString()} label="RATINGS" />
-            <StatBlock num={`${avgConsensus}%`} label="AVG CONSENSUS" />
-            <StatBlock num={getRatedCount().toString()} label="YOU RATED" />
+
+        {/* Hero banner */}
+        <View style={styles.hero}>
+          <View style={styles.heroLeft}>
+            <Text style={styles.heroNum}>
+              {String(topSets.length).padStart(2, '0')}
+            </Text>
+            <Text style={styles.heroLabel}>TOP{'\n'}SETS</Text>
+          </View>
+          <View style={styles.heroRight}>
+            <View style={styles.heroStat}>
+              <Text style={styles.heroStatNum}>
+                {TOTAL_RATINGS.toLocaleString()}
+              </Text>
+              <Text style={styles.heroStatLabel}>TOTAL RATINGS</Text>
+            </View>
+            <View style={styles.heroSep} />
+            <View style={styles.heroStat}>
+              <Text style={styles.heroStatNum}>{AVG_CONSENSUS}%</Text>
+              <Text style={styles.heroStatLabel}>AVG CONSENSUS</Text>
+            </View>
+            <View style={styles.heroSep} />
+            <View style={styles.heroStat}>
+              <Text style={styles.heroStatNum}>{getRatedCount()}</Text>
+              <Text style={styles.heroStatLabel}>YOU RATED</Text>
+            </View>
           </View>
         </View>
 
-        {/* Interesting fact */}
+        {/* Interesting fact banner */}
         <View style={styles.factBanner}>
           <Text style={styles.factBannerLabel}>// DID YOU KNOW</Text>
           <Text style={styles.factBannerText}>
-            Badania pokazują, że 73% słuchaczy nie jest w stanie rozpoznać złego
-            mixu, jeśli track selection jest dobry. Twoje tagi "tight transitions"
-            mają więc większe znaczenie niż myślisz.
+            Badania pokazują, że 73% słuchaczy nie rozpozna złego mixu,
+            jeśli track selection jest dobry. Twoje tagi mają większe
+            znaczenie niż myślisz.
           </Text>
         </View>
 
@@ -74,8 +91,8 @@ export default function LeaderboardScreen() {
         />
         <View style={styles.divisiveNote}>
           <Text style={styles.divisiveText}>
-            Te sety polaryzują najbardziej — część kocha, część nie rozumie.
-            Consensus score to miara zgodności oceniających.
+            Te sety polaryzują — część kocha, część nie rozumie.
+            Consensus score mierzy zgodność oceniających.
           </Text>
         </View>
         {divisive.map((event, i) => (
@@ -87,7 +104,7 @@ export default function LeaderboardScreen() {
           />
         ))}
 
-        {/* Your stats if rated */}
+        {/* Your stats */}
         {getRatedCount() > 0 && (
           <>
             <SectionHeader
@@ -96,99 +113,101 @@ export default function LeaderboardScreen() {
               decoration="自分"
             />
             <View style={styles.yourStats}>
-              <View style={styles.yourRow}>
-                <Text style={styles.yourLabel}>SETS RATED</Text>
-                <Text style={styles.yourValue}>{getRatedCount()}</Text>
-              </View>
-              <View style={styles.yourRow}>
-                <Text style={styles.yourLabel}>PRESENT AT SHOW</Text>
-                <Text style={styles.yourValue}>
-                  {
-                    Object.values(ratings).filter((r) => r.wasPresent).length
-                  }
-                </Text>
-              </View>
-              <View style={styles.yourRow}>
-                <Text style={styles.yourLabel}>AVG YOUR RATING</Text>
-                <Text style={styles.yourValue}>
-                  {Object.values(ratings).length > 0
+              <YourRow label="SETS RATED" value={getRatedCount().toString()} />
+              <YourRow
+                label="PRESENT AT SHOW"
+                value={myRatingsArr.filter((r) => r.wasPresent).length.toString()}
+              />
+              <YourRow
+                label="AVG YOUR RATING"
+                value={
+                  myRatingsArr.length > 0
                     ? (
-                        Object.values(ratings).reduce(
-                          (s, r) => s + r.overall,
-                          0
-                        ) / Object.values(ratings).length
+                        myRatingsArr.reduce((s, r) => s + r.overall, 0) /
+                        myRatingsArr.length
                       ).toFixed(1)
-                    : '—'}
-                </Text>
-              </View>
+                    : '—'
+                }
+                last
+              />
             </View>
           </>
         )}
 
-        <View style={styles.footer}>
-          <Text style={styles.footerDeco}>TOP SETS</Text>
-        </View>
+        <View style={styles.footer} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function StatBlock({ num, label }: { num: string; label: string }) {
+function YourRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
   return (
-    <View style={styles.statBlock}>
-      <Text style={styles.statNum}>{num}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View style={[styles.yourRow, last && styles.yourRowLast]}>
+      <Text style={styles.yourLabel}>{label}</Text>
+      <Text style={styles.yourValue}>{value}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  scroll: {
-    flex: 1,
-  },
-  globalStats: {
-    padding: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  globalTitle: {
-    fontSize: theme.font.sizes.xs,
-    fontWeight: theme.font.weights.bold,
-    letterSpacing: theme.font.letterSpacing.widest,
-    color: theme.colors.textTertiary,
-    marginBottom: theme.spacing.md,
-  },
-  statsGrid: {
+  safe: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { flex: 1 },
+
+  // Hero
+  hero: {
     flexDirection: 'row',
-    gap: theme.spacing.md,
-  },
-  statBlock: {
-    flex: 1,
-    alignItems: 'center',
-    padding: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderBottomWidth: 2,
+    borderBottomColor: theme.colors.borderStrong,
     backgroundColor: theme.colors.surface,
   },
-  statNum: {
+  heroLeft: {
+    padding: theme.spacing.lg,
+    borderRightWidth: 1,
+    borderRightColor: theme.colors.border,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-end',
+    minWidth: 100,
+  },
+  heroNum: {
+    fontSize: 52,
+    fontWeight: theme.font.weights.black,
+    color: theme.colors.text,
+    fontVariant: ['tabular-nums'],
+    lineHeight: 56,
+  },
+  heroLabel: {
+    fontSize: theme.font.sizes.md,
+    fontWeight: theme.font.weights.black,
+    letterSpacing: theme.font.letterSpacing.widest,
+    color: theme.colors.text,
+    lineHeight: 20,
+  },
+  heroRight: {
+    flex: 1,
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  heroStat: {},
+  heroStatNum: {
     fontSize: theme.font.sizes.xl,
     fontWeight: theme.font.weights.black,
     color: theme.colors.text,
     fontVariant: ['tabular-nums'],
+    lineHeight: 24,
   },
-  statLabel: {
+  heroStatLabel: {
     fontSize: 11,
-    letterSpacing: 1.5,
+    letterSpacing: theme.font.letterSpacing.wider,
     color: theme.colors.textTertiary,
     fontWeight: theme.font.weights.semibold,
-    textAlign: 'center',
-    marginTop: 2,
     lineHeight: 15,
   },
+  heroSep: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+  },
+
+  // Fact banner
   factBanner: {
     margin: theme.spacing.md,
     padding: theme.spacing.md,
@@ -204,8 +223,10 @@ const styles = StyleSheet.create({
   factBannerText: {
     fontSize: theme.font.sizes.sm,
     color: theme.colors.white,
-    lineHeight: 20,
+    lineHeight: 22,
   },
+
+  // Divisive
   divisiveNote: {
     marginHorizontal: theme.spacing.md,
     marginBottom: theme.spacing.sm,
@@ -219,6 +240,8 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 18,
   },
+
+  // Your stats
   yourStats: {
     marginHorizontal: theme.spacing.md,
     marginVertical: theme.spacing.sm,
@@ -229,31 +252,30 @@ const styles = StyleSheet.create({
   yourRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     padding: theme.spacing.md,
+    minHeight: 48,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
+    gap: theme.spacing.md,
+  },
+  yourRowLast: {
+    borderBottomWidth: 0,
   },
   yourLabel: {
     fontSize: theme.font.sizes.xs,
     letterSpacing: theme.font.letterSpacing.wider,
     color: theme.colors.textTertiary,
     fontWeight: theme.font.weights.semibold,
+    flexShrink: 1,
   },
   yourValue: {
     fontSize: theme.font.sizes.sm,
     fontWeight: theme.font.weights.bold,
     color: theme.colors.text,
     fontVariant: ['tabular-nums'],
+    flexShrink: 0,
   },
-  footer: {
-    padding: theme.spacing.xl,
-    alignItems: 'center',
-  },
-  footerDeco: {
-    fontSize: theme.font.sizes.display,
-    fontWeight: theme.font.weights.black,
-    color: theme.colors.textTertiary,
-    opacity: 0.08,
-    letterSpacing: theme.font.letterSpacing.widest,
-  },
+
+  footer: { height: theme.spacing.xxxl },
 });

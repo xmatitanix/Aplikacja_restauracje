@@ -1,27 +1,44 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CityFilter } from '../../components/CityFilter';
 import { EventCard } from '../../components/EventCard';
+import { GenreFilter } from '../../components/GenreFilter';
 import { SectionHeader } from '../../components/SectionHeader';
 import { theme } from '../../constants/theme';
 import {
+  getAllGenres,
   getEventsByCity,
   getTrendingEvents,
 } from '../../data/events';
 import { useRatings } from '../../hooks/useRatings';
 import { CityId } from '../../types';
 
+// Static — never changes
+const trending = getTrendingEvents();
+const featured = trending[0];
+const ALL_GENRES = getAllGenres();
+
 export default function HomeScreen() {
   const router = useRouter();
   const [selectedCity, setSelectedCity] = useState<CityId | 'all'>('all');
+  const [selectedGenre, setSelectedGenre] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
   const { getRatedCount } = useRatings();
 
-  const events = getEventsByCity(selectedCity);
-  const trending = getTrendingEvents();
-  const featured = trending[0];
+  const handleCitySelect = useCallback((city: CityId | 'all') => {
+    setSelectedCity(city);
+    setSelectedGenre('all');
+  }, []);
+
+  const noFilters = selectedCity === 'all' && selectedGenre === 'all';
+
+  const events = useMemo(() => {
+    const cityEvents = getEventsByCity(selectedCity);
+    if (selectedGenre === 'all') return cityEvents;
+    return cityEvents.filter((e) => e.genres.includes(selectedGenre));
+  }, [selectedCity, selectedGenre]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -55,10 +72,17 @@ export default function HomeScreen() {
         <View style={styles.divider} />
 
         {/* City Filter */}
-        <CityFilter selected={selectedCity} onSelect={setSelectedCity} />
+        <CityFilter selected={selectedCity} onSelect={handleCitySelect} />
+
+        {/* Genre Filter */}
+        <GenreFilter
+          genres={ALL_GENRES}
+          selected={selectedGenre}
+          onSelect={setSelectedGenre}
+        />
 
         {/* Featured */}
-        {selectedCity === 'all' && featured && (
+        {noFilters && featured && (
           <>
             <SectionHeader label="FEATURED SET" decoration="精選" />
             <EventCard
@@ -72,8 +96,8 @@ export default function HomeScreen() {
 
         {/* Events List */}
         <SectionHeader
-          label={selectedCity === 'all' ? 'RECENT SETS' : 'SETS IN CITY'}
-          sublabel={`${events.length} available`}
+          label={noFilters ? 'RECENT SETS' : selectedGenre !== 'all' ? selectedGenre.toUpperCase() : 'SETS IN CITY'}
+          sublabel={`${events.length} ${events.length === 1 ? 'set' : 'setów'}`}
           decoration="全部"
         />
 
@@ -81,12 +105,12 @@ export default function HomeScreen() {
           <View style={styles.empty}>
             <Text style={styles.emptyText}>NO SETS YET</Text>
             <Text style={styles.emptySubtext}>
-              Brak setów dla wybranego miasta
+              Brak setów dla wybranych filtrów
             </Text>
           </View>
         ) : (
           events
-            .filter((e) => e.id !== featured?.id || selectedCity !== 'all')
+            .filter((e) => !noFilters || e.id !== featured?.id)
             .map((event, i) => (
               <EventCard
                 key={event.id}
@@ -189,7 +213,6 @@ const styles = StyleSheet.create({
   footerKana: {
     fontSize: theme.font.sizes.xl,
     color: theme.colors.textTertiary,
-    opacity: 0.3,
     fontWeight: theme.font.weights.black,
   },
 });

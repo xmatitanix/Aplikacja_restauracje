@@ -11,11 +11,26 @@ import { RatingDisplay } from '../../components/RatingDisplay';
 import { theme } from '../../constants/theme';
 import { formatDate, getCityName, getEventById } from '../../data/events';
 import { useRatings } from '../../hooks/useRatings';
+import { useSupportRatings } from '../../hooks/useSupportRatings';
+import { isValidEventId } from '../../types';
 
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { hasRated, getRating } = useRatings();
+  const { hasRated: hasSupportRated, getRating: getSupportRating } = useSupportRatings();
+
+  // Validate param
+  if (!isValidEventId(id)) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.notFound}>
+          <Text style={styles.notFoundText}>INVALID SET ID</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const event = getEventById(id);
 
   if (!event) {
@@ -40,16 +55,16 @@ export default function EventDetailScreen() {
             <Text style={styles.heroIndex}>SET</Text>
             <View style={styles.genreRow}>
               {event.genres.map((g) => (
-                <Text key={g} style={styles.genre}>
+                <Text key={g} style={styles.genre} numberOfLines={1}>
                   {g}
                 </Text>
               ))}
             </View>
           </View>
 
-          <Text style={styles.djName}>{event.djName}</Text>
+          <Text style={styles.djName} numberOfLines={2}>{event.djName}</Text>
           {event.supportingActs && event.supportingActs.length > 0 && (
-            <Text style={styles.supporting}>
+            <Text style={styles.supporting} numberOfLines={1}>
               + {event.supportingActs.join(', ')}
             </Text>
           )}
@@ -74,6 +89,56 @@ export default function EventDetailScreen() {
           <View style={styles.descBlock}>
             <Text style={styles.descLabel}>// OPIS</Text>
             <Text style={styles.descText} numberOfLines={6}>{event.description}</Text>
+          </View>
+        )}
+
+        {/* Support acts section */}
+        {event.supportingActs && event.supportingActs.length > 0 && (
+          <View style={styles.supportBlock}>
+            <Text style={styles.supportHeader}>// SUPPORT ACTS</Text>
+            <Text style={styles.supportHint}>
+              Oceń support niezależnie od głównego setu
+            </Text>
+            {event.supportingActs.map((act) => {
+              const supportRated = hasSupportRated(event.id, act);
+              const supportRating = supportRated
+                ? getSupportRating(event.id, act)
+                : undefined;
+              return (
+                <View key={act} style={styles.supportRow}>
+                  <View style={styles.supportInfo}>
+                    <Text style={styles.supportBadge}>SUPPORT</Text>
+                    <Text style={styles.supportName} numberOfLines={1}>{act}</Text>
+                    {supportRated && supportRating && (
+                      <Text style={styles.supportMyScore}>
+                        Twoja ocena: {supportRating.overall}/5
+                      </Text>
+                    )}
+                  </View>
+                  {supportRated ? (
+                    <View style={styles.supportRatedBadge}>
+                      <Text style={styles.supportRatedText}>✓ RATED</Text>
+                    </View>
+                  ) : (
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.supportRateBtn,
+                        pressed && styles.pressed,
+                      ]}
+                      onPress={() =>
+                        router.push(
+                          `/rate-support/${event.id}?act=${encodeURIComponent(act)}`
+                        )
+                      }
+                      accessibilityRole="button"
+                      accessibilityLabel={`Oceń support: ${act}`}
+                    >
+                      <Text style={styles.supportRateBtnText}>OCEŃ SUPPORT</Text>
+                    </Pressable>
+                  )}
+                </View>
+              );
+            })}
           </View>
         )}
 
@@ -118,6 +183,8 @@ export default function EventDetailScreen() {
             <Pressable
               style={({ pressed }) => [styles.ctaBtn, pressed && styles.ctaPressed]}
               onPress={() => router.push(`/rate/${event.id}`)}
+              accessibilityRole="button"
+              accessibilityLabel="Oceń ten set"
             >
               <Text style={styles.ctaBtnText}>OCEŃ TEN SET</Text>
               <Text style={styles.ctaKana}>評価する</Text>
@@ -139,13 +206,10 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  scroll: {
-    flex: 1,
-  },
+  safe: { flex: 1, backgroundColor: theme.colors.background },
+  scroll: { flex: 1 },
+  pressed: { opacity: 0.7 },
+
   notFound: {
     flex: 1,
     alignItems: 'center',
@@ -177,10 +241,7 @@ const styles = StyleSheet.create({
     color: theme.colors.textTertiary,
     fontWeight: theme.font.weights.semibold,
   },
-  genreRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-  },
+  genreRow: { flexDirection: 'row', gap: theme.spacing.sm, flexWrap: 'wrap' },
   genre: {
     fontSize: theme.font.sizes.xs,
     color: theme.colors.textTertiary,
@@ -191,12 +252,13 @@ const styles = StyleSheet.create({
     fontWeight: theme.font.weights.black,
     letterSpacing: -1,
     color: theme.colors.text,
-    lineHeight: 44,
+    lineHeight: 46,
   },
   supporting: {
     fontSize: theme.font.sizes.md,
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.xs,
+    lineHeight: 20,
   },
 
   // Info block
@@ -252,6 +314,88 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 
+  // Support acts
+  supportBlock: {
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    paddingTop: theme.spacing.md,
+  },
+  supportHeader: {
+    fontSize: theme.font.sizes.xs,
+    letterSpacing: theme.font.letterSpacing.wider,
+    color: theme.colors.textTertiary,
+    fontWeight: theme.font.weights.semibold,
+    paddingHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.xs,
+  },
+  supportHint: {
+    fontSize: theme.font.sizes.xs,
+    color: theme.colors.textTertiary,
+    paddingHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    fontStyle: 'italic',
+    lineHeight: 16,
+  },
+  supportRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    gap: theme.spacing.md,
+    minHeight: 56,
+  },
+  supportInfo: { flex: 1, minWidth: 0 },
+  supportBadge: {
+    fontSize: 10,
+    fontWeight: theme.font.weights.bold,
+    letterSpacing: theme.font.letterSpacing.wider,
+    color: theme.colors.textTertiary,
+    marginBottom: 2,
+  },
+  supportName: {
+    fontSize: theme.font.sizes.md,
+    fontWeight: theme.font.weights.bold,
+    color: theme.colors.text,
+    lineHeight: 20,
+  },
+  supportMyScore: {
+    fontSize: theme.font.sizes.xs,
+    color: theme.colors.textTertiary,
+    marginTop: 2,
+  },
+  supportRateBtn: {
+    borderWidth: 1,
+    borderColor: theme.colors.text,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    flexShrink: 0,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  supportRateBtnText: {
+    fontSize: theme.font.sizes.xs,
+    fontWeight: theme.font.weights.bold,
+    letterSpacing: theme.font.letterSpacing.wider,
+    color: theme.colors.text,
+  },
+  supportRatedBadge: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.accentLight,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    flexShrink: 0,
+  },
+  supportRatedText: {
+    fontSize: theme.font.sizes.xs,
+    fontWeight: theme.font.weights.bold,
+    letterSpacing: theme.font.letterSpacing.wider,
+    color: theme.colors.textSecondary,
+  },
+
   // My rating
   myRatingBanner: {
     margin: theme.spacing.md,
@@ -302,6 +446,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderWidth: 1,
     borderColor: theme.colors.border,
+    overflow: 'hidden',
   },
 
   // Ratings section
@@ -317,6 +462,7 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
     marginTop: theme.spacing.sm,
+    gap: theme.spacing.md,
   },
   ratingsTitle: {
     fontSize: theme.font.sizes.xs,
@@ -341,10 +487,10 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
     alignItems: 'center',
     gap: theme.spacing.xs,
+    minHeight: 56,
+    justifyContent: 'center',
   },
-  ctaPressed: {
-    opacity: 0.7,
-  },
+  ctaPressed: { opacity: 0.7 },
   ctaBtnText: {
     fontSize: theme.font.sizes.md,
     fontWeight: theme.font.weights.black,

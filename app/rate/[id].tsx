@@ -13,9 +13,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../../constants/theme';
 import { ENERGY_ARCS, getEventById, VIBE_TAGS } from '../../data/events';
 import { useRatings } from '../../hooks/useRatings';
-import { EnergyArc, Rating } from '../../types';
+import { AGE_GROUPS, AgeGroup, EnergyArc, Rating } from '../../types';
 
-const STEPS = ['overall', 'energy', 'selection', 'mix', 'tags', 'presence'] as const;
+const STEPS = ['overall', 'energy', 'selection', 'mix', 'tags', 'age', 'presence'] as const;
 type Step = typeof STEPS[number];
 
 const STEP_LABELS: Record<Step, string> = {
@@ -24,6 +24,7 @@ const STEP_LABELS: Record<Step, string> = {
   selection: 'SELECTION STYLE',
   mix: 'MIX QUALITY',
   tags: 'VIBE TAGS',
+  age: 'CROWD AGE',
   presence: 'WERE YOU THERE?',
 };
 
@@ -33,6 +34,7 @@ const STEP_KANA: Record<Step, string> = {
   selection: '選択',
   mix: 'ミックス',
   tags: 'タグ',
+  age: '年齢層',
   presence: '存在',
 };
 
@@ -48,6 +50,7 @@ export default function RateScreen() {
   const [selectionStyle, setSelectionStyle] = useState<-2 | -1 | 0 | 1 | 2 | null>(null);
   const [mixQuality, setMixQuality] = useState<1 | 2 | 3 | 4 | 5 | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [ageGroup, setAgeGroup] = useState<AgeGroup | null>(null);
   const [wasPresent, setWasPresent] = useState<boolean | null>(null);
 
   const stepIndex = STEPS.indexOf(step);
@@ -114,6 +117,7 @@ export default function RateScreen() {
       crowdSync,
       tags: selectedTags,
       wasPresent,
+      ...(ageGroup ? { ageGroup } : {}),
       timestamp: Date.now(),
     };
 
@@ -129,6 +133,7 @@ export default function RateScreen() {
       case 'selection': return selectionStyle !== null;
       case 'mix': return mixQuality !== null;
       case 'tags': return true;
+      case 'age': return true; // optional
       case 'presence': return wasPresent !== null;
     }
   }
@@ -185,6 +190,9 @@ export default function RateScreen() {
             selected={selectedTags}
             onChange={setSelectedTags}
           />
+        )}
+        {step === 'age' && (
+          <AgeStep value={ageGroup} onChange={setAgeGroup} />
         )}
         {step === 'presence' && (
           <PresenceStep value={wasPresent} onChange={(v) => {
@@ -439,6 +447,46 @@ function TagsStep({
         })}
       </View>
       <Text style={styles.tagCounter}>{selected.length}/5 TAGS SELECTED</Text>
+    </View>
+  );
+}
+
+function AgeStep({
+  value,
+  onChange,
+}: {
+  value: AgeGroup | null;
+  onChange: (v: AgeGroup | null) => void;
+}) {
+  return (
+    <View style={styles.stepBody}>
+      <Text style={styles.stepHint}>
+        Jaka była dominująca grupa wiekowa publiczności? Możesz pominąć.
+      </Text>
+      <View style={styles.ageGrid}>
+        {AGE_GROUPS.map((group) => (
+          <Pressable
+            key={group}
+            style={[styles.agePill, value === group && styles.agePillActive]}
+            onPress={() => onChange(value === group ? null : group)}
+            accessibilityRole="radio"
+            accessibilityLabel={`Wiek ${group}`}
+          >
+            <Text style={[styles.agePillText, value === group && styles.agePillTextActive]}>
+              {group}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      {value && (
+        <Text style={styles.selectionConfirm}>{value} LAT</Text>
+      )}
+      <View style={styles.noteBox}>
+        <Text style={styles.noteText}>
+          // Opcjonalne — pomaga innym wybrać odpowiednie imprezy.
+          Twoja ocena pozostaje anonimowa.
+        </Text>
+      </View>
     </View>
   );
 }
@@ -763,6 +811,37 @@ const styles = StyleSheet.create({
     fontWeight: theme.font.weights.semibold,
     marginTop: theme.spacing.md,
     textAlign: 'center',
+  },
+
+  // Age
+  ageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
+    paddingVertical: theme.spacing.lg,
+  },
+  agePill: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  agePillActive: {
+    backgroundColor: theme.colors.text,
+    borderColor: theme.colors.text,
+  },
+  agePillText: {
+    fontSize: theme.font.sizes.md,
+    fontWeight: theme.font.weights.bold,
+    color: theme.colors.textSecondary,
+    letterSpacing: theme.font.letterSpacing.wide,
+    fontVariant: ['tabular-nums'],
+  },
+  agePillTextActive: {
+    color: theme.colors.white,
   },
 
   // Presence

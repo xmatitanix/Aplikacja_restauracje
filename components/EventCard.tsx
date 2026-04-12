@@ -104,6 +104,11 @@ export function EventCard({ event, onPress, variant = 'default', index = 0 }: Pr
         <Text style={styles.compactIndex}>{num}</Text>
         <View style={styles.compactBody}>
           <Text style={styles.compactDJ} numberOfLines={1}>{event.djName}</Text>
+          {event.supportingActs && event.supportingActs.length > 0 && (
+            <Text style={styles.compactSupport} numberOfLines={1}>
+              + {event.supportingActs.join(', ')}
+            </Text>
+          )}
           <Text style={styles.compactVenue} numberOfLines={1}>
             {event.venueName} · {getCityName(event.city)}
           </Text>
@@ -282,6 +287,12 @@ const styles = StyleSheet.create({
     fontWeight: theme.font.weights.semibold,
     color: theme.colors.text,
     lineHeight: 20,
+  },
+  compactSupport: {
+    fontSize: theme.font.sizes.xs,
+    color: theme.colors.textSecondary,
+    marginTop: 1,
+    lineHeight: 14,
   },
   compactVenue: {
     fontSize: theme.font.sizes.xs,
