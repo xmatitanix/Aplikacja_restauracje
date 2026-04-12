@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CityFilter } from '../../components/CityFilter';
@@ -13,15 +13,17 @@ import {
 import { useRatings } from '../../hooks/useRatings';
 import { CityId } from '../../types';
 
+// Static — never changes
+const trending = getTrendingEvents();
+const featured = trending[0];
+
 export default function HomeScreen() {
   const router = useRouter();
   const [selectedCity, setSelectedCity] = useState<CityId | 'all'>('all');
   const [refreshing, setRefreshing] = useState(false);
   const { getRatedCount } = useRatings();
 
-  const events = getEventsByCity(selectedCity);
-  const trending = getTrendingEvents();
-  const featured = trending[0];
+  const events = useMemo(() => getEventsByCity(selectedCity), [selectedCity]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -189,7 +191,6 @@ const styles = StyleSheet.create({
   footerKana: {
     fontSize: theme.font.sizes.xl,
     color: theme.colors.textTertiary,
-    opacity: 0.3,
     fontWeight: theme.font.weights.black,
   },
 });

@@ -11,17 +11,18 @@ import {
 } from '../../data/events';
 import { useRatings } from '../../hooks/useRatings';
 
+// Static data — computed once, never changes
+const topSets = getTopRatedEvents();
+const divisive = getMostDivisiveEvents();
+const TOTAL_RATINGS = MOCK_EVENTS.reduce((s, e) => s + e.ratingData.count, 0);
+const AVG_CONSENSUS = Math.round(
+  MOCK_EVENTS.reduce((s, e) => s + e.ratingData.consensusScore, 0) /
+    MOCK_EVENTS.length
+);
+
 export default function LeaderboardScreen() {
   const router = useRouter();
   const { ratings, getRatedCount } = useRatings();
-  const topSets = getTopRatedEvents();
-  const divisive = getMostDivisiveEvents();
-
-  const totalRatings = MOCK_EVENTS.reduce((s, e) => s + e.ratingData.count, 0);
-  const avgConsensus = Math.round(
-    MOCK_EVENTS.reduce((s, e) => s + e.ratingData.consensusScore, 0) /
-      MOCK_EVENTS.length
-  );
   const myRatingsArr = Object.values(ratings) as { overall: number; wasPresent: boolean }[];
 
   return (
@@ -39,13 +40,13 @@ export default function LeaderboardScreen() {
           <View style={styles.heroRight}>
             <View style={styles.heroStat}>
               <Text style={styles.heroStatNum}>
-                {totalRatings.toLocaleString()}
+                {TOTAL_RATINGS.toLocaleString()}
               </Text>
               <Text style={styles.heroStatLabel}>TOTAL RATINGS</Text>
             </View>
             <View style={styles.heroSep} />
             <View style={styles.heroStat}>
-              <Text style={styles.heroStatNum}>{avgConsensus}%</Text>
+              <Text style={styles.heroStatNum}>{AVG_CONSENSUS}%</Text>
               <Text style={styles.heroStatLabel}>AVG CONSENSUS</Text>
             </View>
             <View style={styles.heroSep} />
@@ -112,10 +113,7 @@ export default function LeaderboardScreen() {
               decoration="自分"
             />
             <View style={styles.yourStats}>
-              <YourRow
-                label="SETS RATED"
-                value={getRatedCount().toString()}
-              />
+              <YourRow label="SETS RATED" value={getRatedCount().toString()} />
               <YourRow
                 label="PRESENT AT SHOW"
                 value={myRatingsArr.filter((r) => r.wasPresent).length.toString()}
@@ -130,6 +128,7 @@ export default function LeaderboardScreen() {
                       ).toFixed(1)
                     : '—'
                 }
+                last
               />
             </View>
           </>
@@ -141,9 +140,9 @@ export default function LeaderboardScreen() {
   );
 }
 
-function YourRow({ label, value }: { label: string; value: string }) {
+function YourRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
   return (
-    <View style={styles.yourRow}>
+    <View style={[styles.yourRow, last && styles.yourRowLast]}>
       <Text style={styles.yourLabel}>{label}</Text>
       <Text style={styles.yourValue}>{value}</Text>
     </View>
@@ -180,7 +179,7 @@ const styles = StyleSheet.create({
     fontSize: theme.font.sizes.md,
     fontWeight: theme.font.weights.black,
     letterSpacing: theme.font.letterSpacing.widest,
-    color: theme.colors.textSecondary,
+    color: theme.colors.text,
     lineHeight: 20,
   },
   heroRight: {
@@ -259,6 +258,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
     gap: theme.spacing.md,
+  },
+  yourRowLast: {
+    borderBottomWidth: 0,
   },
   yourLabel: {
     fontSize: theme.font.sizes.xs,

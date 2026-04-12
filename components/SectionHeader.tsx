@@ -48,7 +48,6 @@ const styles = StyleSheet.create({
     fontSize: theme.font.sizes.xl,
     color: theme.colors.textTertiary,
     fontWeight: theme.font.weights.black,
-    opacity: 0.15,
     letterSpacing: theme.font.letterSpacing.tight,
   },
 });
