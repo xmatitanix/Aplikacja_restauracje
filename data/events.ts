@@ -729,3 +729,25 @@ export function getAllGenres(): string[] {
   MOCK_EVENTS.forEach((e) => e.genres.forEach((g) => set.add(g)));
   return Array.from(set).sort();
 }
+
+// Macro genre groups — raw genre tags are bucketed into these for the filter UI
+export const GENRE_GROUPS: Record<string, string[]> = {
+  TECHNO: [
+    'Techno', 'Dub Techno', 'Minimal', 'Hard Techno', 'Dark Ambient',
+    'Detroit Techno', 'Industrial', 'EBM', 'Noise',
+  ],
+  HOUSE: ['House', 'Disco'],
+  ELECTRONIC: [
+    'Electronic', 'Experimental', 'UK Bass', 'Electro', 'Ghetto Tech',
+    'Club Music', 'Breaks', 'Live', 'Jazz',
+  ],
+  'DRUM & BASS': ['Drum & Bass', 'Jungle', 'Liquid'],
+};
+
+export function getAvailableMacroGenres(events: DJEvent[]): string[] {
+  const presentGenres = new Set<string>();
+  events.forEach((e) => e.genres.forEach((g) => presentGenres.add(g)));
+  return Object.keys(GENRE_GROUPS).filter((macro) =>
+    GENRE_GROUPS[macro].some((g) => presentGenres.has(g))
+  );
+}
