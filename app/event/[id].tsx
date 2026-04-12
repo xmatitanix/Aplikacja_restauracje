@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RatingDisplay } from '../../components/RatingDisplay';
+import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../constants/theme';
 import { formatDate, getCityName, getEventById } from '../../data/events';
 import { useRatings } from '../../hooks/useRatings';
@@ -17,6 +18,7 @@ import { isValidEventId } from '../../types';
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuth();
   const { hasRated, getRating } = useRatings();
   const { hasRated: hasSupportRated, getRating: getSupportRating } = useSupportRatings();
 
@@ -184,7 +186,7 @@ export default function EventDetailScreen() {
         ) : (
           <Pressable
             style={({ pressed }) => [styles.ctaBtn, pressed && styles.ctaPressed]}
-            onPress={() => router.push(`/rate/${event.id}`)}
+            onPress={() => user ? router.push(`/rate/${event.id}`) : router.push('/login')}
             accessibilityRole="button"
             accessibilityLabel="Oceń ten set"
           >

@@ -1,30 +1,33 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import { DJEvent } from '../types';
 
-const STORAGE_KEY = 'setlog_submitted_events';
-
 export function useSubmittedEvents() {
+  const { user } = useAuth();
   const [events, setEvents] = useState<DJEvent[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let mounted = true;
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((raw) => {
-        if (!mounted) return;
-        if (raw) {
-          try {
-            setEvents(JSON.parse(raw));
-          } catch {
-            setEvents([]);
-          }
+
+    // Load publicly visible submitted events (all users, no auth required)
+    supabase
+      .from('submitted_events')
+      .select('event_data')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (!mounted || error || !data) {
+          if (mounted) setLoaded(true);
+          return;
         }
+        const parsed = data
+          .map((row) => row.event_data as DJEvent)
+          .filter(Boolean);
+        setEvents(parsed);
         setLoaded(true);
-      })
-      .catch(() => {
-        if (mounted) setLoaded(true);
       });
+
     return () => {
       mounted = false;
     };
@@ -32,15 +35,18 @@ export function useSubmittedEvents() {
 
   const submitEvent = useCallback(
     async (event: DJEvent) => {
-      const updated = [...events, event];
-      setEvents(updated);
-      try {
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      } catch {
-        // Storage write failed — state updated in memory
+      if (!user) return;
+
+      const { error } = await supabase.from('submitted_events').insert({
+        user_id: user.id,
+        event_data: event,
+      });
+
+      if (!error) {
+        setEvents((prev) => [event, ...prev]);
       }
     },
-    [events]
+    [user]
   );
 
   return { events, submitEvent, loaded };
