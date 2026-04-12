@@ -14,7 +14,12 @@ import { EventCard } from '../../components/EventCard';
 import { GenreFilter } from '../../components/GenreFilter';
 import { SectionHeader } from '../../components/SectionHeader';
 import { theme } from '../../constants/theme';
-import { getEventsByCity, getTrendingEvents } from '../../data/events';
+import {
+  GENRE_GROUPS,
+  getAvailableMacroGenres,
+  getEventsByCity,
+  getTrendingEvents,
+} from '../../data/events';
 import { useRatings } from '../../hooks/useRatings';
 import { CityId } from '../../types';
 
@@ -40,11 +45,10 @@ export default function HomeScreen() {
 
   const cityEvents = useMemo(() => getEventsByCity(selectedCity), [selectedCity]);
 
-  const availableGenres = useMemo(() => {
-    const set = new Set<string>();
-    cityEvents.forEach((e) => e.genres.forEach((g) => set.add(g)));
-    return Array.from(set).sort();
-  }, [cityEvents]);
+  const availableGenres = useMemo(
+    () => getAvailableMacroGenres(cityEvents),
+    [cityEvents]
+  );
 
   const hasActiveFilters =
     selectedCity !== 'all' || selectedGenre !== 'all' || onlyUnrated;
@@ -52,7 +56,10 @@ export default function HomeScreen() {
   const events = useMemo(() => {
     let list = cityEvents;
     if (selectedGenre !== 'all') {
-      list = list.filter((e) => e.genres.includes(selectedGenre));
+      const subGenres = GENRE_GROUPS[selectedGenre];
+      list = subGenres
+        ? list.filter((e) => e.genres.some((g) => subGenres.includes(g)))
+        : list.filter((e) => e.genres.includes(selectedGenre));
     }
     if (onlyUnrated) {
       list = list.filter((e) => !hasRated(e.id));
@@ -85,7 +92,7 @@ export default function HomeScreen() {
       : showFeatured
       ? 'RECENT SETS'
       : selectedGenre !== 'all'
-      ? selectedGenre.toUpperCase()
+      ? selectedGenre
       : selectedCity !== 'all'
       ? 'SETS IN CITY'
       : 'ALL SETS';
