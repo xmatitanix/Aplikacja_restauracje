@@ -17,3 +17,4 @@ yarn-error.*
 .DS_Store
 *.log
 google-service-account.json
+scripts/.env

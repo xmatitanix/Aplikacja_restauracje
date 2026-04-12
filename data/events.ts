@@ -1,4 +1,8 @@
 import { City, CityFact, CityId, DJEvent } from '../types';
+import { FETCHED_EVENTS } from './fetched-events';
+
+// Eventy ręcznie skurowane (zawsze w aplikacji)
+// Eventy z Ticketmaster są w data/fetched-events.ts (generowane przez scripts/sync-events.js)
 
 export const CITIES: City[] = [
   {
@@ -680,32 +684,39 @@ export const MOCK_EVENTS: DJEvent[] = [
   },
 ];
 
+// Połączone eventy: ręczne + pobrane z Ticketmaster
+// FETCHED_EVENTS mają niższy priorytet — MOCK_EVENTS wygrywają przy duplikatach id
+const FETCHED_DEDUPED = FETCHED_EVENTS.filter(
+  (fe) => !MOCK_EVENTS.some((me) => me.id === fe.id)
+);
+export const ALL_EVENTS: DJEvent[] = [...MOCK_EVENTS, ...FETCHED_DEDUPED];
+
 export function getEventById(id: string): DJEvent | undefined {
-  return MOCK_EVENTS.find((e) => e.id === id);
+  return ALL_EVENTS.find((e) => e.id === id);
 }
 
 export function getEventsByCity(cityId: CityId | 'all'): DJEvent[] {
-  if (cityId === 'all') return [...MOCK_EVENTS].sort((a, b) => b.createdAt - a.createdAt);
-  return MOCK_EVENTS.filter((e) => e.city === cityId).sort(
+  if (cityId === 'all') return [...ALL_EVENTS].sort((a, b) => b.createdAt - a.createdAt);
+  return ALL_EVENTS.filter((e) => e.city === cityId).sort(
     (a, b) => b.createdAt - a.createdAt
   );
 }
 
 export function getTrendingEvents(): DJEvent[] {
-  return [...MOCK_EVENTS]
+  return [...ALL_EVENTS]
     .sort((a, b) => b.ratingData.count - a.ratingData.count)
     .slice(0, 5);
 }
 
 export function getTopRatedEvents(): DJEvent[] {
-  return [...MOCK_EVENTS]
+  return [...ALL_EVENTS]
     .filter((e) => e.ratingData.count >= 200)
     .sort((a, b) => b.ratingData.avgOverall - a.ratingData.avgOverall)
     .slice(0, 10);
 }
 
 export function getMostDivisiveEvents(): DJEvent[] {
-  return [...MOCK_EVENTS]
+  return [...ALL_EVENTS]
     .filter((e) => e.ratingData.consensusScore < 80)
     .sort((a, b) => a.ratingData.consensusScore - b.ratingData.consensusScore)
     .slice(0, 5);
@@ -726,7 +737,7 @@ export function getCityName(cityId: CityId): string {
 
 export function getAllGenres(): string[] {
   const set = new Set<string>();
-  MOCK_EVENTS.forEach((e) => e.genres.forEach((g) => set.add(g)));
+  ALL_EVENTS.forEach((e) => e.genres.forEach((g) => set.add(g)));
   return Array.from(set).sort();
 }
 
