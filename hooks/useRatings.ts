@@ -1,48 +1,80 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import { Rating } from '../types';
 
-const STORAGE_KEY = 'setlog_ratings';
-
 export function useRatings() {
+  const { user } = useAuth();
   const [ratings, setRatings] = useState<Record<string, Rating>>({});
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    if (!user) {
+      setRatings({});
+      setLoaded(true);
+      return;
+    }
+
     let mounted = true;
 
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((raw) => {
-        if (!mounted) return;
-        if (raw) {
-          try {
-            setRatings(JSON.parse(raw));
-          } catch {
-            setRatings({});
-          }
+    supabase
+      .from('ratings')
+      .select('*')
+      .eq('user_id', user.id)
+      .then(({ data, error }) => {
+        if (!mounted || error || !data) {
+          if (mounted) setLoaded(true);
+          return;
         }
+        const map: Record<string, Rating> = {};
+        data.forEach((row) => {
+          map[row.event_id] = {
+            eventId: row.event_id,
+            overall: row.overall,
+            energyArc: row.energy_arc,
+            selectionStyle: row.selection_style,
+            mixQuality: row.mix_quality,
+            crowdSync: row.crowd_sync,
+            tags: row.tags ?? [],
+            wasPresent: row.was_present,
+            ageGroup: row.age_group ?? undefined,
+            timestamp: new Date(row.created_at).getTime(),
+          };
+        });
+        setRatings(map);
         setLoaded(true);
-      })
-      .catch(() => {
-        if (mounted) setLoaded(true);
       });
 
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [user]);
 
   const saveRating = useCallback(
     async (rating: Rating) => {
-      const updated = { ...ratings, [rating.eventId]: rating };
-      setRatings(updated);
-      try {
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      } catch {
-        // Storage write failed — state still updated in memory
+      if (!user) return;
+
+      const { error } = await supabase.from('ratings').upsert(
+        {
+          user_id: user.id,
+          event_id: rating.eventId,
+          overall: rating.overall,
+          energy_arc: rating.energyArc,
+          selection_style: rating.selectionStyle,
+          mix_quality: rating.mixQuality,
+          crowd_sync: rating.crowdSync,
+          tags: rating.tags,
+          was_present: rating.wasPresent,
+          age_group: rating.ageGroup ?? null,
+        },
+        { onConflict: 'user_id,event_id' }
+      );
+
+      if (!error) {
+        setRatings((prev) => ({ ...prev, [rating.eventId]: rating }));
       }
     },
-    [ratings]
+    [user]
   );
 
   const getRating = useCallback(

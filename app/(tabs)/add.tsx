@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -10,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../constants/theme';
 import { CITIES, GENRE_GROUPS } from '../../data/events';
 import { useSubmittedEvents } from '../../hooks/useSubmittedEvents';
@@ -36,6 +38,8 @@ const EMPTY_RATING: AggregatedRatings = {
 };
 
 export default function AddScreen() {
+  const { user, signOut } = useAuth();
+  const router = useRouter();
   const { submitEvent } = useSubmittedEvents();
 
   const [djName, setDjName] = useState('');
@@ -106,6 +110,29 @@ export default function AddScreen() {
     setSubmitted(false);
   };
 
+  // Auth gate — must be logged in to add events
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.authGate}>
+          <Text style={styles.authKana}>認証</Text>
+          <Text style={styles.authTitle}>DODAJ SET</Text>
+          <Text style={styles.authSub}>
+            Żeby dodać event musisz mieć konto — dzięki temu wiemy kto co dodał
+            i możemy dbać o jakość bazy.
+          </Text>
+          <Pressable
+            style={({ pressed }) => [styles.authBtn, pressed && styles.pressed]}
+            onPress={() => router.push('/login')}
+            accessibilityRole="button"
+          >
+            <Text style={styles.authBtnText}>ZALOGUJ SIĘ / ZAREJESTRUJ</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (submitted) {
     return (
       <SafeAreaView style={styles.safe} edges={['bottom']}>
@@ -141,7 +168,13 @@ export default function AddScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>DODAJ SET</Text>
+            <View style={styles.headerRow}>
+              <Text style={styles.headerTitle}>DODAJ SET</Text>
+              <Pressable onPress={signOut} style={styles.signOutBtn}>
+                <Text style={styles.signOutText}>WYLOGUJ</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.headerAccount}>{user.email}</Text>
             <Text style={styles.headerSub}>
               Byłeś/aś na secie, którego tu nie ma? Dodaj go — inni będą
               mogli go ocenić.
@@ -366,17 +399,40 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.borderStrong,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   headerTitle: {
     fontSize: theme.font.sizes.xxxl,
     fontWeight: theme.font.weights.black,
     letterSpacing: theme.font.letterSpacing.widest,
     color: theme.colors.text,
   },
+  headerAccount: {
+    fontSize: theme.font.sizes.xs,
+    color: theme.colors.textTertiary,
+    marginTop: 2,
+    marginBottom: theme.spacing.xs,
+  },
   headerSub: {
     fontSize: theme.font.sizes.sm,
     color: theme.colors.textTertiary,
     marginTop: theme.spacing.xs,
     lineHeight: 18,
+  },
+  signOutBtn: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 4,
+  },
+  signOutText: {
+    fontSize: 10,
+    fontWeight: theme.font.weights.semibold,
+    letterSpacing: theme.font.letterSpacing.wider,
+    color: theme.colors.textTertiary,
   },
 
   // Field wrapper
@@ -578,5 +634,41 @@ const styles = StyleSheet.create({
     fontWeight: theme.font.weights.bold,
     letterSpacing: theme.font.letterSpacing.wider,
     color: theme.colors.text,
+  },
+
+  // Auth gate
+  authGate: {
+    flex: 1,
+    padding: theme.spacing.xl,
+    justifyContent: 'center',
+    gap: theme.spacing.md,
+  },
+  authKana: {
+    fontSize: theme.font.sizes.xs,
+    letterSpacing: theme.font.letterSpacing.wider,
+    color: theme.colors.textTertiary,
+  },
+  authTitle: {
+    fontSize: 32,
+    fontWeight: theme.font.weights.black,
+    letterSpacing: theme.font.letterSpacing.widest,
+    color: theme.colors.text,
+  },
+  authSub: {
+    fontSize: theme.font.sizes.md,
+    color: theme.colors.textSecondary,
+    lineHeight: 26,
+  },
+  authBtn: {
+    backgroundColor: theme.colors.text,
+    padding: theme.spacing.md,
+    alignItems: 'center',
+    marginTop: theme.spacing.md,
+  },
+  authBtnText: {
+    fontSize: theme.font.sizes.sm,
+    fontWeight: theme.font.weights.black,
+    letterSpacing: theme.font.letterSpacing.widest,
+    color: theme.colors.white,
   },
 });
