@@ -90,7 +90,7 @@ export interface CityFact {
 
 // Validation helpers
 export function isValidEventId(id: unknown): id is string {
-  return typeof id === 'string' && /^[a-z0-9_-]{1,50}$/.test(id);
+  return typeof id === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(id);
 }
 
 export function isValidActName(name: unknown): name is string {
