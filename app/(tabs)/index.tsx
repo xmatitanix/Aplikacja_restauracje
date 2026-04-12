@@ -1,54 +1,111 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CityFilter } from '../../components/CityFilter';
 import { EventCard } from '../../components/EventCard';
 import { GenreFilter } from '../../components/GenreFilter';
 import { SectionHeader } from '../../components/SectionHeader';
 import { theme } from '../../constants/theme';
-import {
-  getAllGenres,
-  getEventsByCity,
-  getTrendingEvents,
-} from '../../data/events';
+import { getEventsByCity, getTrendingEvents } from '../../data/events';
 import { useRatings } from '../../hooks/useRatings';
 import { CityId } from '../../types';
+
+type SortBy = 'recent' | 'rating' | 'popular';
 
 // Static — never changes
 const trending = getTrendingEvents();
 const featured = trending[0];
-const ALL_GENRES = getAllGenres();
 
 export default function HomeScreen() {
   const router = useRouter();
   const [selectedCity, setSelectedCity] = useState<CityId | 'all'>('all');
   const [selectedGenre, setSelectedGenre] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<SortBy>('recent');
+  const [onlyUnrated, setOnlyUnrated] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const { getRatedCount } = useRatings();
+  const { getRatedCount, hasRated } = useRatings();
 
   const handleCitySelect = useCallback((city: CityId | 'all') => {
     setSelectedCity(city);
     setSelectedGenre('all');
   }, []);
 
-  const noFilters = selectedCity === 'all' && selectedGenre === 'all';
+  const cityEvents = useMemo(() => getEventsByCity(selectedCity), [selectedCity]);
+
+  const availableGenres = useMemo(() => {
+    const set = new Set<string>();
+    cityEvents.forEach((e) => e.genres.forEach((g) => set.add(g)));
+    return Array.from(set).sort();
+  }, [cityEvents]);
+
+  const hasActiveFilters =
+    selectedCity !== 'all' || selectedGenre !== 'all' || onlyUnrated;
 
   const events = useMemo(() => {
-    const cityEvents = getEventsByCity(selectedCity);
-    if (selectedGenre === 'all') return cityEvents;
-    return cityEvents.filter((e) => e.genres.includes(selectedGenre));
-  }, [selectedCity, selectedGenre]);
+    let list = cityEvents;
+    if (selectedGenre !== 'all') {
+      list = list.filter((e) => e.genres.includes(selectedGenre));
+    }
+    if (onlyUnrated) {
+      list = list.filter((e) => !hasRated(e.id));
+    }
+    const sorted = [...list];
+    if (sortBy === 'rating') {
+      sorted.sort((a, b) => b.ratingData.avgOverall - a.ratingData.avgOverall);
+    } else if (sortBy === 'popular') {
+      sorted.sort((a, b) => b.ratingData.count - a.ratingData.count);
+    } else {
+      sorted.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+    }
+    return sorted;
+  }, [cityEvents, selectedGenre, onlyUnrated, hasRated, sortBy]);
+
+  const showFeatured =
+    selectedCity === 'all' &&
+    selectedGenre === 'all' &&
+    !onlyUnrated &&
+    sortBy === 'recent' &&
+    !!featured;
+
+  const listLabel =
+    sortBy === 'rating'
+      ? 'TOP RATED'
+      : sortBy === 'popular'
+      ? 'MOST POPULAR'
+      : showFeatured
+      ? 'RECENT SETS'
+      : selectedGenre !== 'all'
+      ? selectedGenre.toUpperCase()
+      : selectedCity !== 'all'
+      ? 'SETS IN CITY'
+      : 'ALL SETS';
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 800);
   }, []);
 
+  const clearFilters = useCallback(() => {
+    setSelectedCity('all');
+    setSelectedGenre('all');
+    setOnlyUnrated(false);
+  }, []);
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
         style={styles.scroll}
+        stickyHeaderIndices={[1]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -57,79 +114,164 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.wordmark}>SETLOG</Text>
-            <Text style={styles.tagline}>音楽評価プラットフォーム</Text>
+        {/* Child 0: Header */}
+        <View>
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.wordmark}>SETLOG</Text>
+              <Text style={styles.tagline}>音楽評価プラットフォーム</Text>
+            </View>
+            <View style={styles.statsBox}>
+              <Text style={styles.statsNum}>{getRatedCount()}</Text>
+              <Text style={styles.statsLabel}>RATED</Text>
+            </View>
           </View>
-          <View style={styles.statsBox}>
-            <Text style={styles.statsNum}>{getRatedCount()}</Text>
-            <Text style={styles.statsLabel}>RATED</Text>
-          </View>
+          <View style={styles.divider} />
         </View>
 
-        <View style={styles.divider} />
+        {/* Child 1: Sticky filter area */}
+        <View style={styles.filterArea}>
+          <CityFilter selected={selectedCity} onSelect={handleCitySelect} />
+          <GenreFilter
+            genres={availableGenres}
+            selected={selectedGenre}
+            onSelect={setSelectedGenre}
+          />
+          <SortBar
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            onlyUnrated={onlyUnrated}
+            onToggleUnrated={() => setOnlyUnrated((v) => !v)}
+            hasActiveFilters={hasActiveFilters}
+            onClear={clearFilters}
+          />
+        </View>
 
-        {/* City Filter */}
-        <CityFilter selected={selectedCity} onSelect={handleCitySelect} />
-
-        {/* Genre Filter */}
-        <GenreFilter
-          genres={ALL_GENRES}
-          selected={selectedGenre}
-          onSelect={setSelectedGenre}
-        />
-
-        {/* Featured */}
-        {noFilters && featured && (
-          <>
-            <SectionHeader label="FEATURED SET" decoration="精選" />
-            <EventCard
-              event={featured}
-              variant="featured"
-              index={0}
-              onPress={() => router.push(`/event/${featured.id}`)}
-            />
-          </>
-        )}
-
-        {/* Events List */}
-        <SectionHeader
-          label={noFilters ? 'RECENT SETS' : selectedGenre !== 'all' ? selectedGenre.toUpperCase() : 'SETS IN CITY'}
-          sublabel={`${events.length} ${events.length === 1 ? 'set' : 'setów'}`}
-          decoration="全部"
-        />
-
-        {events.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>NO SETS YET</Text>
-            <Text style={styles.emptySubtext}>
-              Brak setów dla wybranych filtrów
-            </Text>
-          </View>
-        ) : (
-          events
-            .filter((e) => !noFilters || e.id !== featured?.id)
-            .map((event, i) => (
+        {/* Child 2: Content */}
+        <View>
+          {showFeatured && (
+            <>
+              <SectionHeader label="FEATURED SET" decoration="精選" />
               <EventCard
-                key={event.id}
-                event={event}
-                index={i}
-                onPress={() => router.push(`/event/${event.id}`)}
+                event={featured}
+                variant="featured"
+                index={0}
+                onPress={() => router.push(`/event/${featured.id}`)}
               />
-            ))
-        )}
+            </>
+          )}
 
-        {/* Footer decoration */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            SETLOG / DJ RATING PLATFORM / PL
-          </Text>
-          <Text style={styles.footerKana}>セットログ</Text>
+          <SectionHeader
+            label={listLabel}
+            sublabel={`${events.length} ${events.length === 1 ? 'set' : 'setów'}`}
+            decoration="全部"
+          />
+
+          {events.length === 0 ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyText}>NO SETS</Text>
+              <Text style={styles.emptySubtext}>
+                Brak setów dla wybranych filtrów
+              </Text>
+            </View>
+          ) : (
+            events
+              .filter((e) => !showFeatured || e.id !== featured?.id)
+              .map((event, i) => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  index={i}
+                  onPress={() => router.push(`/event/${event.id}`)}
+                />
+              ))
+          )}
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              SETLOG / DJ RATING PLATFORM / PL
+            </Text>
+            <Text style={styles.footerKana}>セットログ</Text>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function SortBar({
+  sortBy,
+  onSortChange,
+  onlyUnrated,
+  onToggleUnrated,
+  hasActiveFilters,
+  onClear,
+}: {
+  sortBy: SortBy;
+  onSortChange: (s: SortBy) => void;
+  onlyUnrated: boolean;
+  onToggleUnrated: () => void;
+  hasActiveFilters: boolean;
+  onClear: () => void;
+}) {
+  return (
+    <View style={styles.sortBar}>
+      <View style={styles.sortGroup}>
+        {(['recent', 'rating', 'popular'] as SortBy[]).map((s) => {
+          const label =
+            s === 'recent' ? 'NEW' : s === 'rating' ? 'TOP' : 'HOT';
+          const active = sortBy === s;
+          return (
+            <Pressable
+              key={s}
+              style={[styles.sortPill, active && styles.sortPillActive]}
+              onPress={() => onSortChange(s)}
+              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              accessibilityRole="button"
+              accessibilityLabel={`Sortuj: ${label}`}
+            >
+              <Text
+                style={[
+                  styles.sortPillText,
+                  active && styles.sortPillTextActive,
+                ]}
+              >
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <View style={styles.sortRight}>
+        <Pressable
+          style={[styles.sortPill, onlyUnrated && styles.sortPillActive]}
+          onPress={onToggleUnrated}
+          hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          accessibilityRole="button"
+          accessibilityLabel="Tylko nieocenione"
+        >
+          <Text
+            style={[
+              styles.sortPillText,
+              onlyUnrated && styles.sortPillTextActive,
+            ]}
+          >
+            ☆ UNRATED
+          </Text>
+        </Pressable>
+        {hasActiveFilters && (
+          <Pressable
+            style={styles.clearBtn}
+            onPress={onClear}
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+            accessibilityRole="button"
+            accessibilityLabel="Wyczyść filtry"
+          >
+            <Text style={styles.clearBtnText}>× CLEAR</Text>
+          </Pressable>
+        )}
+      </View>
+    </View>
   );
 }
 
@@ -141,6 +283,8 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
+
+  // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -183,6 +327,70 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: theme.colors.border,
   },
+
+  // Sticky filter area
+  filterArea: {
+    backgroundColor: theme.colors.background,
+  },
+
+  // Sort bar
+  sortBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    gap: theme.spacing.sm,
+  },
+  sortGroup: {
+    flexDirection: 'row',
+    gap: theme.spacing.xs,
+  },
+  sortRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+  sortPill: {
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    minHeight: 28,
+    justifyContent: 'center',
+  },
+  sortPillActive: {
+    backgroundColor: theme.colors.text,
+    borderColor: theme.colors.text,
+  },
+  sortPillText: {
+    fontSize: theme.font.sizes.xs,
+    fontWeight: theme.font.weights.semibold,
+    letterSpacing: theme.font.letterSpacing.wide,
+    color: theme.colors.textTertiary,
+  },
+  sortPillTextActive: {
+    color: theme.colors.white,
+  },
+  clearBtn: {
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 5,
+    minHeight: 28,
+    justifyContent: 'center',
+  },
+  clearBtnText: {
+    fontSize: theme.font.sizes.xs,
+    fontWeight: theme.font.weights.semibold,
+    letterSpacing: theme.font.letterSpacing.wide,
+    color: theme.colors.textTertiary,
+  },
+
+  // Content
   empty: {
     padding: theme.spacing.xxxl,
     alignItems: 'center',

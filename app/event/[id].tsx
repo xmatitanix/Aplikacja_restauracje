@@ -48,7 +48,7 @@ export default function EventDetailScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
-      <ScrollView style={styles.scroll}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         {/* Hero */}
         <View style={styles.hero}>
           <View style={styles.heroTop}>
@@ -173,25 +173,26 @@ export default function EventDetailScreen() {
 
         <RatingDisplay data={event.ratingData} />
 
-        {/* CTA */}
-        <View style={styles.ctaContainer}>
-          {rated ? (
-            <View style={styles.ratedBox}>
-              <Text style={styles.ratedText}>✓ OCENIŁEŚ/AŚ TEN SET</Text>
-            </View>
-          ) : (
-            <Pressable
-              style={({ pressed }) => [styles.ctaBtn, pressed && styles.ctaPressed]}
-              onPress={() => router.push(`/rate/${event.id}`)}
-              accessibilityRole="button"
-              accessibilityLabel="Oceń ten set"
-            >
-              <Text style={styles.ctaBtnText}>OCEŃ TEN SET</Text>
-              <Text style={styles.ctaKana}>評価する</Text>
-            </Pressable>
-          )}
-        </View>
       </ScrollView>
+
+      {/* Pinned CTA — always visible */}
+      <View style={styles.stickyBottom}>
+        {rated ? (
+          <View style={styles.ratedBox}>
+            <Text style={styles.ratedText}>✓ OCENIŁEŚ/AŚ TEN SET</Text>
+          </View>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [styles.ctaBtn, pressed && styles.ctaPressed]}
+            onPress={() => router.push(`/rate/${event.id}`)}
+            accessibilityRole="button"
+            accessibilityLabel="Oceń ten set"
+          >
+            <Text style={styles.ctaBtnText}>OCEŃ TEN SET</Text>
+            <Text style={styles.ctaKana}>評価する</Text>
+          </Pressable>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -208,6 +209,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: theme.colors.background },
   scroll: { flex: 1 },
+  scrollContent: { paddingBottom: theme.spacing.md },
   pressed: { opacity: 0.7 },
 
   notFound: {
@@ -476,11 +478,12 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
 
-  // CTA
-  ctaContainer: {
+  // Pinned CTA
+  stickyBottom: {
     padding: theme.spacing.md,
-    paddingBottom: theme.spacing.xxxl,
-    marginTop: theme.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
   },
   ctaBtn: {
     backgroundColor: theme.colors.text,
