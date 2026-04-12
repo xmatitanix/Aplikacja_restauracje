@@ -32,6 +32,14 @@ export default function RootLayout() {
           name="rate/[id]"
           options={{ title: 'RATE SET', presentation: 'modal' }}
         />
+        <Stack.Screen
+          name="rate-support/[id]"
+          options={{ title: 'RATE SUPPORT', presentation: 'modal' }}
+        />
+        <Stack.Screen
+          name="explore/[city]"
+          options={{ title: 'CITY SETS' }}
+        />
       </Stack>
     </>
   );
