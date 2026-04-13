@@ -11,6 +11,7 @@ import { RatingDisplay } from '../../components/RatingDisplay';
 import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../constants/theme';
 import { formatDate, getCityName, getEventById } from '../../data/events';
+import { useDjNotes } from '../../hooks/useDjNotes';
 import { useRatings } from '../../hooks/useRatings';
 import { useSupportRatings } from '../../hooks/useSupportRatings';
 import { isValidEventId } from '../../types';
@@ -21,6 +22,7 @@ export default function EventDetailScreen() {
   const { user } = useAuth();
   const { hasRated, getRating } = useRatings();
   const { hasRated: hasSupportRated, getRating: getSupportRating } = useSupportRatings();
+  const { notes: djNotes, myNote: myDjNote } = useDjNotes(id ?? '');
 
   // Validate param
   if (!isValidEventId(id)) {
@@ -76,6 +78,15 @@ export default function EventDetailScreen() {
         <View style={styles.infoBlock}>
           <InfoRow label="VENUE" value={event.venueName} />
           <InfoRow label="CITY" value={getCityName(event.city)} />
+          <Pressable
+            style={({ pressed }) => [styles.djProfileRow, pressed && styles.pressed]}
+            onPress={() => router.push(`/dj/${encodeURIComponent(event.djName)}`)}
+            accessibilityRole="link"
+            accessibilityLabel={`Profil DJ: ${event.djName}`}
+          >
+            <Text style={styles.djProfileLabel}>DJ PROFIL</Text>
+            <Text style={styles.djProfileArrow}>→</Text>
+          </Pressable>
           <InfoRow
             label="DATE"
             value={`${formatDate(event.date)} · ${event.startTime}${
@@ -161,6 +172,69 @@ export default function EventDetailScreen() {
                   <Text key={t} style={styles.myTag}>{t}</Text>
                 ))}
               </View>
+            )}
+          </View>
+        )}
+
+        {/* DJ Notes */}
+        {(djNotes.length > 0 || user) && (
+          <View style={styles.djNotesBlock}>
+            <View style={styles.djNotesHeader}>
+              <Text style={styles.djNotesTitle}>// DJ NOTATKI</Text>
+              <Text style={styles.djNotesKana}>アーティストより</Text>
+            </View>
+
+            {djNotes.length === 0 && (
+              <Text style={styles.djNotesEmpty}>
+                Żaden DJ nie dodał jeszcze notatki do tego setu.
+              </Text>
+            )}
+
+            {djNotes.map((note) => {
+              const isOwn = user?.id === note.user_id;
+              return (
+                <View key={note.id} style={[styles.djNote, isOwn && styles.djNoteOwn]}>
+                  <View style={styles.djNoteTop}>
+                    <Text style={styles.djNoteAuthor}>{note.author_name}</Text>
+                    {isOwn && (
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.djNoteEditBtn,
+                          pressed && styles.pressed,
+                        ]}
+                        onPress={() => router.push(`/dj-note/${event.id}`)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Text style={styles.djNoteEditText}>EDYTUJ</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                  <Text style={styles.djNoteContent}>{note.content}</Text>
+                  <Text style={styles.djNoteDate}>
+                    {new Date(note.updated_at).toLocaleDateString('pl-PL', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </Text>
+                </View>
+              );
+            })}
+
+            {user && !myDjNote && (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.djNoteAddBtn,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() => router.push(`/dj-note/${event.id}`)}
+                accessibilityRole="button"
+              >
+                <Text style={styles.djNoteAddText}>+ DODAJ NOTATKĘ DJ</Text>
+                <Text style={styles.djNoteAddSub}>
+                  Jesteś DJ-em tego setu? Zostaw słowo dla fanów
+                </Text>
+              </Pressable>
             )}
           </View>
         )}
@@ -296,6 +370,28 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'right',
     lineHeight: 18,
+  },
+
+  // DJ profile row
+  djProfileRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 12,
+    minHeight: 44,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  djProfileLabel: {
+    fontSize: theme.font.sizes.xs,
+    fontWeight: theme.font.weights.semibold,
+    letterSpacing: theme.font.letterSpacing.wider,
+    color: theme.colors.textTertiary,
+  },
+  djProfileArrow: {
+    fontSize: theme.font.sizes.md,
+    color: theme.colors.textSecondary,
   },
 
   // Description
@@ -451,6 +547,103 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.border,
     overflow: 'hidden',
+  },
+
+  // DJ Notes
+  djNotesBlock: {
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    marginTop: theme.spacing.sm,
+  },
+  djNotesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.sm,
+  },
+  djNotesTitle: {
+    fontSize: theme.font.sizes.xs,
+    fontWeight: theme.font.weights.semibold,
+    letterSpacing: theme.font.letterSpacing.wider,
+    color: theme.colors.textTertiary,
+  },
+  djNotesKana: {
+    fontSize: theme.font.sizes.xs,
+    color: theme.colors.textTertiary,
+  },
+  djNotesEmpty: {
+    fontSize: theme.font.sizes.sm,
+    color: theme.colors.textTertiary,
+    paddingHorizontal: theme.spacing.md,
+    paddingBottom: theme.spacing.md,
+    fontStyle: 'italic',
+  },
+  djNote: {
+    padding: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
+  djNoteOwn: {
+    backgroundColor: theme.colors.accentLight,
+    borderLeftWidth: 3,
+    borderLeftColor: theme.colors.text,
+  },
+  djNoteTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.sm,
+  },
+  djNoteAuthor: {
+    fontSize: theme.font.sizes.sm,
+    fontWeight: theme.font.weights.black,
+    letterSpacing: theme.font.letterSpacing.wide,
+    color: theme.colors.text,
+  },
+  djNoteEditBtn: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 3,
+  },
+  djNoteEditText: {
+    fontSize: 10,
+    fontWeight: theme.font.weights.bold,
+    letterSpacing: theme.font.letterSpacing.wider,
+    color: theme.colors.textSecondary,
+  },
+  djNoteContent: {
+    fontSize: theme.font.sizes.md,
+    color: theme.colors.text,
+    lineHeight: 22,
+    marginBottom: theme.spacing.sm,
+  },
+  djNoteDate: {
+    fontSize: 11,
+    color: theme.colors.textTertiary,
+    letterSpacing: theme.font.letterSpacing.wide,
+  },
+  djNoteAddBtn: {
+    padding: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    gap: 4,
+  },
+  djNoteAddText: {
+    fontSize: theme.font.sizes.xs,
+    fontWeight: theme.font.weights.bold,
+    letterSpacing: theme.font.letterSpacing.wider,
+    color: theme.colors.textSecondary,
+  },
+  djNoteAddSub: {
+    fontSize: 11,
+    color: theme.colors.textTertiary,
+    fontStyle: 'italic',
   },
 
   // Ratings section
