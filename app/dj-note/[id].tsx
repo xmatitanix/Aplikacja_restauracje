@@ -22,7 +22,7 @@ const MAX_CHARS = 280;
 export default function DjNoteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isDj } = useAuth();
 
   const event = isValidEventId(id) ? getEventById(id) : null;
   const { myNote, saveNote, deleteNote } = useDjNotes(isValidEventId(id) ? id : '');
@@ -39,12 +39,12 @@ export default function DjNoteScreen() {
     }
   }, [myNote]);
 
-  if (!user || !event) {
+  if (!user || !isDj || !event) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <Text style={styles.errorText}>
-            {!user ? 'MUSISZ BYĆ ZALOGOWANY' : 'SET NOT FOUND'}
+            {!user ? 'MUSISZ BYĆ ZALOGOWANY' : !isDj ? 'TYLKO DLA DJ-ÓW' : 'SET NOT FOUND'}
           </Text>
         </View>
       </SafeAreaView>

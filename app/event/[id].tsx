@@ -19,7 +19,7 @@ import { isValidEventId } from '../../types';
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isDj } = useAuth();
   const { hasRated, getRating } = useRatings();
   const { hasRated: hasSupportRated, getRating: getSupportRating } = useSupportRatings();
   const { notes: djNotes, myNote: myDjNote } = useDjNotes(id ?? '');
@@ -207,8 +207,8 @@ export default function EventDetailScreen() {
           </View>
         )}
 
-        {/* Subtle DJ note CTA — only for logged-in users without a note */}
-        {user && !myDjNote && (
+        {/* Subtle DJ note CTA — only for verified DJs without a note */}
+        {user && isDj && !myDjNote && (
           <Pressable
             style={({ pressed }) => [styles.djNoteAddLink, pressed && styles.pressed]}
             onPress={() => router.push(`/dj-note/${event.id}`)}
