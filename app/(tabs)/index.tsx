@@ -74,6 +74,27 @@ export default function HomeScreen() {
     return macroSubs.filter((g) => present.has(g));
   }, [selectedMacro, cityEvents]);
 
+  // Liczniki eventów per miasto (wszystkie eventy, nie tylko przefiltrowane)
+  const cityEventCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    getEventsByCity('all').forEach((e) => {
+      counts[e.city] = (counts[e.city] ?? 0) + 1;
+    });
+    return counts;
+  }, []);
+
+  // Liczniki per makro-gatunek (w aktualnym mieście)
+  const macroCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    availableGenres.forEach((macro) => {
+      const subs = GENRE_GROUPS[macro] ?? [];
+      counts[macro] = cityEvents.filter((e) =>
+        e.genres.some((g) => subs.includes(g))
+      ).length;
+    });
+    return counts;
+  }, [availableGenres, cityEvents]);
+
   const hasActiveFilters =
     selectedCity !== 'all' || selectedMacro !== 'all' || onlyUnrated;
 
@@ -171,7 +192,11 @@ export default function HomeScreen() {
 
         {/* Child 1: Sticky filter area */}
         <View style={styles.filterArea}>
-          <CityFilter selected={selectedCity} onSelect={handleCitySelect} />
+          <CityFilter
+            selected={selectedCity}
+            onSelect={handleCitySelect}
+            eventCounts={cityEventCounts}
+          />
           <GenreFilter
             macros={availableGenres}
             selectedMacro={selectedMacro}
@@ -179,6 +204,7 @@ export default function HomeScreen() {
             subGenres={availableSubGenres}
             selectedSubGenre={selectedSubGenre}
             onSelectSubGenre={setSelectedSubGenre}
+            macroCounts={macroCounts}
           />
           <SortBar
             sortBy={sortBy}
@@ -260,60 +286,47 @@ function SortBar({
 }) {
   return (
     <View style={styles.sortBar}>
-      <View style={styles.sortGroup}>
-        {(['recent', 'rating', 'popular'] as SortBy[]).map((s) => {
-          const label =
-            s === 'recent' ? 'NEW' : s === 'rating' ? 'TOP' : 'HOT';
-          const active = sortBy === s;
-          return (
-            <Pressable
-              key={s}
-              style={[styles.sortPill, active && styles.sortPillActive]}
-              onPress={() => onSortChange(s)}
-              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-              accessibilityRole="button"
-              accessibilityLabel={`Sortuj: ${label}`}
-            >
-              <Text
-                style={[
-                  styles.sortPillText,
-                  active && styles.sortPillTextActive,
-                ]}
+      <Text style={styles.sortLabel}>// SORTUJ</Text>
+      <View style={styles.sortInner}>
+        <View style={styles.sortGroup}>
+          {(['recent', 'rating', 'popular'] as SortBy[]).map((s) => {
+            const label =
+              s === 'recent' ? 'NOWE' : s === 'rating' ? 'TOP' : 'HOT';
+            const active = sortBy === s;
+            return (
+              <Pressable
+                key={s}
+                style={[styles.sortPill, active && styles.sortPillActive]}
+                onPress={() => onSortChange(s)}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
               >
-                {label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      <View style={styles.sortRight}>
-        <Pressable
-          style={[styles.sortPill, onlyUnrated && styles.sortPillActive]}
-          onPress={onToggleUnrated}
-          hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-          accessibilityRole="button"
-          accessibilityLabel="Tylko nieocenione"
-        >
-          <Text
-            style={[
-              styles.sortPillText,
-              onlyUnrated && styles.sortPillTextActive,
-            ]}
-          >
-            ☆ UNRATED
-          </Text>
-        </Pressable>
-        {hasActiveFilters && (
+                <Text style={[styles.sortPillText, active && styles.sortPillTextActive]}>
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <View style={styles.sortRight}>
           <Pressable
-            style={styles.clearBtn}
-            onPress={onClear}
+            style={[styles.sortPill, onlyUnrated && styles.sortPillUnrated]}
+            onPress={onToggleUnrated}
             hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-            accessibilityRole="button"
-            accessibilityLabel="Wyczyść filtry"
           >
-            <Text style={styles.clearBtnText}>× CLEAR</Text>
+            <Text style={[styles.sortPillText, onlyUnrated && styles.sortPillTextActive]}>
+              ☆ UNRATED
+            </Text>
           </Pressable>
-        )}
+          {hasActiveFilters && (
+            <Pressable
+              style={styles.clearBtn}
+              onPress={onClear}
+              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+            >
+              <Text style={styles.clearBtnText}>× RESET</Text>
+            </Pressable>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -366,15 +379,24 @@ const styles = StyleSheet.create({
   filterArea: { backgroundColor: theme.colors.background },
 
   sortBar: {
+    backgroundColor: theme.colors.background,
+    borderBottomWidth: 2,
+    borderBottomColor: theme.colors.borderStrong,
+    paddingTop: theme.spacing.xs,
+    paddingBottom: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+  },
+  sortLabel: {
+    fontSize: 10,
+    letterSpacing: theme.font.letterSpacing.wider,
+    color: theme.colors.textTertiary,
+    fontWeight: theme.font.weights.semibold,
+    marginBottom: 4,
+  },
+  sortInner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
     gap: theme.spacing.sm,
   },
   sortGroup: { flexDirection: 'row', gap: theme.spacing.xs },
@@ -387,9 +409,14 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     minHeight: 28,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   sortPillActive: {
     backgroundColor: theme.colors.text,
+    borderColor: theme.colors.text,
+  },
+  sortPillUnrated: {
+    backgroundColor: theme.colors.surface,
     borderColor: theme.colors.text,
   },
   sortPillText: {
@@ -404,12 +431,14 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     minHeight: 28,
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E53E3E',
   },
   clearBtnText: {
     fontSize: theme.font.sizes.xs,
     fontWeight: theme.font.weights.semibold,
     letterSpacing: theme.font.letterSpacing.wide,
-    color: theme.colors.textTertiary,
+    color: '#E53E3E',
   },
 
   empty: { padding: theme.spacing.xxxl, alignItems: 'center' },
