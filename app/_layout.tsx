@@ -45,6 +45,10 @@ export default function RootLayout() {
           name="login"
           options={{ title: 'KONTO', presentation: 'modal' }}
         />
+        <Stack.Screen
+          name="dj-note/[id]"
+          options={{ title: 'DJ NOTATKA', presentation: 'modal' }}
+        />
       </Stack>
     </AuthProvider>
   );
