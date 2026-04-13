@@ -5,6 +5,7 @@ import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../../constants/theme';
 import { getEventById } from '../../data/events';
+import { useEventRatings } from '../../hooks/useEventRatings';
 import { useRatings } from '../../hooks/useRatings';
 import { isValidEventId } from '../../types';
 
@@ -46,14 +47,16 @@ export default function RateResultScreen() {
 
   const myRating = getRating(id);
   const streak = getStreak();
-  const data = event.ratingData;
+  const { data: liveData } = useEventRatings(id);
+
+  const data = liveData ?? event.ratingData;
 
   const topTags = Object.entries(data.tagCounts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4)
     .map(([tag]) => tag);
 
-  const presentPct = Math.round(data.presentPct * 100);
+  const presentPct = data.presentPct;
   const communityScore = data.avgOverall.toFixed(1);
 
   return (

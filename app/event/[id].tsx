@@ -12,6 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../constants/theme';
 import { formatDate, getCityName, getEventById } from '../../data/events';
 import { useDjNotes } from '../../hooks/useDjNotes';
+import { useEventRatings } from '../../hooks/useEventRatings';
 import { useRatings } from '../../hooks/useRatings';
 import { useSupportRatings } from '../../hooks/useSupportRatings';
 import { isValidEventId } from '../../types';
@@ -23,6 +24,7 @@ export default function EventDetailScreen() {
   const { hasRated, getRating } = useRatings();
   const { hasRated: hasSupportRated, getRating: getSupportRating } = useSupportRatings();
   const { notes: djNotes, myNote: myDjNote } = useDjNotes(id ?? '');
+  const { data: liveRatings, loading: ratingsLoading } = useEventRatings(isValidEventId(id) ? id : '');
 
   // Validate param
   if (!isValidEventId(id)) {
@@ -219,15 +221,23 @@ export default function EventDetailScreen() {
           </Pressable>
         )}
 
-        {/* Rating data */}
+        {/* Rating data — live from Supabase */}
         <View style={styles.ratingsHeader}>
           <Text style={styles.ratingsTitle}>COMMUNITY RATINGS</Text>
-          <Text style={styles.ratingsCount}>
-            {event.ratingData.count} ocen
-          </Text>
+          {!ratingsLoading && (
+            <Text style={styles.ratingsCount}>
+              {liveRatings ? `${liveRatings.count} ${liveRatings.count === 1 ? 'ocena' : liveRatings.count < 5 ? 'oceny' : 'ocen'}` : '0 ocen'}
+            </Text>
+          )}
         </View>
 
-        <RatingDisplay data={event.ratingData} />
+        {!ratingsLoading && liveRatings ? (
+          <RatingDisplay data={liveRatings} />
+        ) : !ratingsLoading ? (
+          <View style={styles.noRatings}>
+            <Text style={styles.noRatingsText}>Brak ocen — bądź pierwszy</Text>
+          </View>
+        ) : null}
 
       </ScrollView>
 
@@ -235,7 +245,7 @@ export default function EventDetailScreen() {
       <View style={styles.stickyBottom}>
         {rated ? (
           <View style={styles.ratedBox}>
-            <Text style={styles.ratedText}>✓ OCENIŁEŚ/AŚ TEN SET</Text>
+            <Text style={styles.ratedText}>✓ OCENIŁEŚ TEN SET</Text>
           </View>
         ) : (
           <Pressable
@@ -620,6 +630,17 @@ const styles = StyleSheet.create({
     fontSize: theme.font.sizes.xs,
     color: theme.colors.textTertiary,
     fontVariant: ['tabular-nums'],
+  },
+  noRatings: {
+    padding: theme.spacing.xl,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  noRatingsText: {
+    fontSize: theme.font.sizes.sm,
+    color: theme.colors.textTertiary,
+    fontStyle: 'italic',
   },
 
   // Pinned CTA
