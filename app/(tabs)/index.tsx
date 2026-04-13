@@ -39,6 +39,7 @@ export default function HomeScreen() {
   const [onlyUnrated, setOnlyUnrated] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const { getRatedCount, hasRated, getStreak } = useRatings();
+  const streak = getStreak();
   const { events: submittedEvents } = useSubmittedEvents();
 
   const handleCitySelect = useCallback((city: CityId | 'all') => {
@@ -183,10 +184,10 @@ export default function HomeScreen() {
               <Text style={styles.tagline}>音楽評価プラットフォーム</Text>
             </View>
             <View style={styles.headerRight}>
-              {getStreak() >= 2 && (
+              {streak >= 2 && (
                 <View style={styles.streakBox}>
                   <Text style={styles.streakEmoji}>🔥</Text>
-                  <Text style={styles.streakNum}>{getStreak()}</Text>
+                  <Text style={styles.streakNum}>{streak}</Text>
                   <Text style={styles.streakLabel}>DNI</Text>
                 </View>
               )}
@@ -468,13 +469,13 @@ const styles = StyleSheet.create({
     minHeight: 28,
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E53E3E',
+    borderColor: theme.colors.danger,
   },
   clearBtnText: {
     fontSize: theme.font.sizes.xs,
     fontWeight: theme.font.weights.semibold,
     letterSpacing: theme.font.letterSpacing.wide,
-    color: '#E53E3E',
+    color: theme.colors.danger,
   },
 
   empty: { padding: theme.spacing.xxxl, alignItems: 'center' },

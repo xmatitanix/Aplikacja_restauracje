@@ -8,7 +8,7 @@ export default function DjProfileScreen() {
   const { name } = useLocalSearchParams<{ name: string }>();
   const router = useRouter();
 
-  const djName = typeof name === 'string' ? decodeURIComponent(name) : '';
+  const djName = typeof name === 'string' ? name : '';
   const events = getEventsByDjName(djName);
 
   if (!djName || events.length === 0) {

@@ -96,23 +96,22 @@ export function useRatings() {
     const timestamps = Object.values(ratings).map((r) => r.timestamp);
     if (timestamps.length === 0) return 0;
 
+    // YYYY-MM-DD from UTC ms — avoids 365 Date allocations
+    const MS = 86_400_000;
     const toDay = (ts: number) => {
       const d = new Date(ts);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     };
 
     const ratedDays = new Set(timestamps.map(toDay));
-
-    const today = new Date();
+    const todayMs = Date.now();
     let streak = 0;
+
     for (let i = 0; i < 365; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      const key = toDay(d.getTime());
-      if (ratedDays.has(key)) {
+      if (ratedDays.has(toDay(todayMs - i * MS))) {
         streak++;
       } else if (i === 0) {
-        // No rating today — check if yesterday to keep streak alive
+        // No rating today yet — grace period, check yesterday
         continue;
       } else {
         break;
