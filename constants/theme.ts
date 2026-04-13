@@ -12,6 +12,7 @@ export const theme = {
     accentLight: '#EEECEA',
     white: '#FFFFFF',
     black: '#000000',
+    danger: '#C0392B',
     cityColors: {
       warszawa: '#1A1A1A',
       krakow: '#3D3530',

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -15,24 +15,33 @@ export function useDjNotes(eventId: string) {
   const { user } = useAuth();
   const [notes, setNotes] = useState<DjNote[]>([]);
   const [loading, setLoading] = useState(true);
-  const [myNote, setMyNote] = useState<DjNote | null>(null);
+
+  // Derived — never out of sync with notes
+  const myNote = useMemo(
+    () => (user ? notes.find((n) => n.user_id === user.id) ?? null : null),
+    [notes, user]
+  );
 
   const fetchNotes = useCallback(async () => {
+    if (!eventId) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
     const { data, error } = await supabase
       .from('dj_notes')
       .select('*')
       .eq('event_id', eventId)
       .order('updated_at', { ascending: false });
 
-    if (!error && data) {
+    if (!cancelled && !error && data) {
       setNotes(data as DjNote[]);
-      if (user) {
-        setMyNote((data as DjNote[]).find((n) => n.user_id === user.id) ?? null);
-      } else {
-        setMyNote(null);
-      }
     }
-    setLoading(false);
+    if (!cancelled) setLoading(false);
+
+    return () => { cancelled = true; };
   }, [eventId, user]);
 
   useEffect(() => {
@@ -54,10 +63,7 @@ export function useDjNotes(eventId: string) {
         { onConflict: 'event_id,user_id' }
       );
 
-      if (!error) {
-        await fetchNotes();
-      }
-
+      if (!error) await fetchNotes();
       return { error: error as Error | null };
     },
     [eventId, user, fetchNotes]
@@ -71,12 +77,9 @@ export function useDjNotes(eventId: string) {
       .delete()
       .eq('id', myNote.id);
 
-    if (!error) {
-      await fetchNotes();
-    }
-
+    if (!error) await fetchNotes();
     return { error: error as Error | null };
   }, [user, myNote, fetchNotes]);
 
-  return { notes, loading, myNote, saveNote, deleteNote, refetch: fetchNotes };
+  return { notes, loading, myNote, saveNote, deleteNote };
 }
