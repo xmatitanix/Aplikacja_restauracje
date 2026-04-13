@@ -72,9 +72,13 @@ export default function RateScreen() {
 
   if (!event) {
     return (
-      <View style={styles.safe}>
-        <Text>Event not found</Text>
-      </View>
+      <SafeAreaView style={styles.safe}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: 16, fontWeight: '900', letterSpacing: 4, color: '#B8B6B0' }}>
+            NIE ZNALEZIONO SETU
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -214,7 +218,7 @@ export default function RateScreen() {
             disabled={!canProceed()}
           >
             <Text style={[styles.nextBtnText, !canProceed() && styles.btnTextDisabled]}>
-              SUBMIT RATING
+              WYŚLIJ OCENĘ
             </Text>
             <Text style={styles.submitKana}>送信する</Text>
           </Pressable>
@@ -225,7 +229,7 @@ export default function RateScreen() {
             disabled={!canProceed()}
           >
             <Text style={[styles.nextBtnText, !canProceed() && styles.btnTextDisabled]}>
-              NEXT →
+              DALEJ →
             </Text>
           </Pressable>
         )}
@@ -500,7 +504,7 @@ function PresenceStep({
   return (
     <View style={styles.stepBody}>
       <Text style={styles.stepHint}>
-        Twoja ocena będzie oznaczona jako "present" lub "online listener" —
+        Twoja ocena będzie oznaczona jako "obecna" lub "online" —
         oba są równie wartościowe.
       </Text>
 
@@ -540,7 +544,7 @@ function PresenceStep({
 
       <View style={styles.noteBox}>
         <Text style={styles.noteText}>
-          // Oceny "present" ważą nieco więcej w algorytmie consensus score,
+          // Oceny "obecne" ważą nieco więcej w algorytmie zgodności,
           bo uwzględniają akustykę i atmosferę miejsca.
         </Text>
       </View>

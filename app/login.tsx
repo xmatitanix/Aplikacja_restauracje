@@ -109,7 +109,7 @@ export default function LoginScreen() {
             <Text style={styles.sub}>
               {mode === 'login'
                 ? 'Twoje oceny są synchronizowane między urządzeniami.'
-                : 'Jeden account = jedna ocena na set. Uczciwie.'}
+                : 'Jedno konto = jedna ocena na set. Uczciwie.'}
             </Text>
           </View>
 

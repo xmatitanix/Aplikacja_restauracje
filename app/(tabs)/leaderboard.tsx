@@ -42,24 +42,24 @@ export default function LeaderboardScreen() {
               <Text style={styles.heroStatNum}>
                 {TOTAL_RATINGS.toLocaleString()}
               </Text>
-              <Text style={styles.heroStatLabel}>TOTAL RATINGS</Text>
+              <Text style={styles.heroStatLabel}>WSZYSTKICH OCEN</Text>
             </View>
             <View style={styles.heroSep} />
             <View style={styles.heroStat}>
               <Text style={styles.heroStatNum}>{AVG_CONSENSUS}%</Text>
-              <Text style={styles.heroStatLabel}>AVG CONSENSUS</Text>
+              <Text style={styles.heroStatLabel}>ŚR. ZGODNOŚĆ</Text>
             </View>
             <View style={styles.heroSep} />
             <View style={styles.heroStat}>
               <Text style={styles.heroStatNum}>{getRatedCount()}</Text>
-              <Text style={styles.heroStatLabel}>YOU RATED</Text>
+              <Text style={styles.heroStatLabel}>TWOJE OCENY</Text>
             </View>
           </View>
         </View>
 
         {/* Interesting fact banner */}
         <View style={styles.factBanner}>
-          <Text style={styles.factBannerLabel}>// DID YOU KNOW</Text>
+          <Text style={styles.factBannerLabel}>// CZY WIESZ, ŻE</Text>
           <Text style={styles.factBannerText}>
             Badania pokazują, że 73% słuchaczy nie rozpoznaje złego miksu,
             jeśli track selection jest dobry. Twoje tagi mają większe
@@ -69,7 +69,7 @@ export default function LeaderboardScreen() {
 
         {/* Top Rated */}
         <SectionHeader
-          label="TOP RATED SETS"
+          label="NAJWYŻEJ OCENIANE"
           sublabel={`Min. 200 ocen · ${topSets.length} pozycji`}
           decoration="最高"
         />
@@ -85,14 +85,14 @@ export default function LeaderboardScreen() {
 
         {/* Most Divisive */}
         <SectionHeader
-          label="MOST DIVISIVE"
-          sublabel="Najniższy consensus score"
+          label="KONTROWERSYJNE"
+          sublabel="Najniższy wynik zgodności"
           decoration="論争"
         />
         <View style={styles.divisiveNote}>
           <Text style={styles.divisiveText}>
             Te sety polaryzują — część kocha, część nie rozumie.
-            Consensus score mierzy zgodność oceniających.
+            Wynik zgodności mierzy jak bardzo oceniający są ze sobą zgodni.
           </Text>
         </View>
         {divisive.map((event, i) => (
@@ -108,18 +108,18 @@ export default function LeaderboardScreen() {
         {getRatedCount() > 0 && (
           <>
             <SectionHeader
-              label="YOUR ACTIVITY"
+              label="TWOJA AKTYWNOŚĆ"
               sublabel="Twoje oceny"
               decoration="自分"
             />
             <View style={styles.yourStats}>
-              <YourRow label="SETS RATED" value={getRatedCount().toString()} />
+              <YourRow label="OCENIONYCH SETÓW" value={getRatedCount().toString()} />
               <YourRow
-                label="PRESENT AT SHOW"
+                label="BYŁEŚ NA ŻYWO"
                 value={myRatingsArr.filter((r) => r.wasPresent).length.toString()}
               />
               <YourRow
-                label="AVG YOUR RATING"
+                label="TWOJA ŚREDNIA"
                 value={
                   myRatingsArr.length > 0
                     ? (

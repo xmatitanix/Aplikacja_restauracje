@@ -13,7 +13,7 @@ export default function ExploreScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView style={styles.scroll}>
         <SectionHeader
-          label="BROWSE BY CITY"
+          label="SCENY MUZYCZNE"
           sublabel="Największe sceny muzyczne w Polsce"
           decoration="都市"
         />
@@ -29,7 +29,7 @@ export default function ExploreScreen() {
           ))}
         </View>
 
-        <SectionHeader label="SCENE NOTES" sublabel="Ciekawostki o miastach" decoration="知識" />
+        <SectionHeader label="CIEKAWOSTKI" sublabel="Ciekawostki o miastach" decoration="知識" />
         {CITY_FACTS.map((fact) => {
           const city = CITIES.find((c) => c.id === fact.cityId);
           return (
@@ -43,11 +43,6 @@ export default function ExploreScreen() {
           );
         })}
 
-        <View style={styles.footer}>
-          <Text style={styles.footerNote}>
-            * Dane eventowe są mockiem — integracja z FB/RA Events w trakcie
-          </Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -218,16 +213,5 @@ const styles = StyleSheet.create({
     fontSize: theme.font.sizes.sm,
     color: theme.colors.textSecondary,
     lineHeight: 20,
-  },
-  footer: {
-    padding: theme.spacing.xl,
-    paddingBottom: theme.spacing.xxxl,
-  },
-  footerNote: {
-    fontSize: theme.font.sizes.xs,
-    color: theme.colors.textTertiary,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    lineHeight: 18,
   },
 });
