@@ -38,7 +38,7 @@ export default function HomeScreen() {
   const [sortBy, setSortBy] = useState<SortBy>('recent');
   const [onlyUnrated, setOnlyUnrated] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const { getRatedCount, hasRated } = useRatings();
+  const { getRatedCount, hasRated, getStreak } = useRatings();
   const { events: submittedEvents } = useSubmittedEvents();
 
   const handleCitySelect = useCallback((city: CityId | 'all') => {
@@ -182,9 +182,18 @@ export default function HomeScreen() {
               <Text style={styles.wordmark}>SETLOG</Text>
               <Text style={styles.tagline}>音楽評価プラットフォーム</Text>
             </View>
-            <View style={styles.statsBox}>
-              <Text style={styles.statsNum}>{getRatedCount()}</Text>
-              <Text style={styles.statsLabel}>RATED</Text>
+            <View style={styles.headerRight}>
+              {getStreak() >= 2 && (
+                <View style={styles.streakBox}>
+                  <Text style={styles.streakEmoji}>🔥</Text>
+                  <Text style={styles.streakNum}>{getStreak()}</Text>
+                  <Text style={styles.streakLabel}>DNI</Text>
+                </View>
+              )}
+              <View style={styles.statsBox}>
+                <Text style={styles.statsNum}>{getRatedCount()}</Text>
+                <Text style={styles.statsLabel}>RATED</Text>
+              </View>
             </View>
           </View>
           <View style={styles.divider} />
@@ -354,6 +363,33 @@ const styles = StyleSheet.create({
     fontSize: theme.font.sizes.sm,
     color: theme.colors.textTertiary,
     marginTop: 2,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: theme.spacing.xs,
+  },
+  streakBox: {
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.text,
+    backgroundColor: theme.colors.text,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+  },
+  streakEmoji: { fontSize: 14, lineHeight: 18 },
+  streakNum: {
+    fontSize: theme.font.sizes.xl,
+    fontWeight: theme.font.weights.black,
+    color: theme.colors.white,
+    fontVariant: ['tabular-nums'],
+    lineHeight: 24,
+  },
+  streakLabel: {
+    fontSize: theme.font.sizes.xs,
+    color: 'rgba(255,255,255,0.6)',
+    letterSpacing: theme.font.letterSpacing.wider,
+    fontWeight: theme.font.weights.semibold,
   },
   statsBox: {
     alignItems: 'flex-end',

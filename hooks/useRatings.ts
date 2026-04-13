@@ -92,5 +92,34 @@ export function useRatings() {
     [ratings]
   );
 
-  return { ratings, saveRating, getRating, hasRated, getRatedCount, loaded };
+  const getStreak = useCallback((): number => {
+    const timestamps = Object.values(ratings).map((r) => r.timestamp);
+    if (timestamps.length === 0) return 0;
+
+    const toDay = (ts: number) => {
+      const d = new Date(ts);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+
+    const ratedDays = new Set(timestamps.map(toDay));
+
+    const today = new Date();
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = toDay(d.getTime());
+      if (ratedDays.has(key)) {
+        streak++;
+      } else if (i === 0) {
+        // No rating today — check if yesterday to keep streak alive
+        continue;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }, [ratings]);
+
+  return { ratings, saveRating, getRating, hasRated, getRatedCount, getStreak, loaded };
 }

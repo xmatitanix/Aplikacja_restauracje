@@ -49,6 +49,14 @@ export default function RootLayout() {
           name="dj-note/[id]"
           options={{ title: 'DJ NOTATKA', presentation: 'modal' }}
         />
+        <Stack.Screen
+          name="rate-result/[id]"
+          options={{ title: 'WYNIKI', presentation: 'modal' }}
+        />
+        <Stack.Screen
+          name="dj/[name]"
+          options={{ title: 'DJ PROFIL' }}
+        />
       </Stack>
     </AuthProvider>
   );

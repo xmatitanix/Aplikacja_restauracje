@@ -1512,3 +1512,8 @@ export function getAvailableMacroGenres(events: DJEvent[]): string[] {
     GENRE_GROUPS[macro].some((g) => presentGenres.has(g))
   );
 }
+
+export function getEventsByDjName(djName: string): DJEvent[] {
+  const normalized = djName.toLowerCase().trim();
+  return ALL_EVENTS.filter((e) => e.djName.toLowerCase().trim() === normalized);
+}

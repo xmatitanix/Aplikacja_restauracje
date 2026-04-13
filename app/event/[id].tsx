@@ -78,6 +78,15 @@ export default function EventDetailScreen() {
         <View style={styles.infoBlock}>
           <InfoRow label="VENUE" value={event.venueName} />
           <InfoRow label="CITY" value={getCityName(event.city)} />
+          <Pressable
+            style={({ pressed }) => [styles.djProfileRow, pressed && styles.pressed]}
+            onPress={() => router.push(`/dj/${encodeURIComponent(event.djName)}`)}
+            accessibilityRole="link"
+            accessibilityLabel={`Profil DJ: ${event.djName}`}
+          >
+            <Text style={styles.djProfileLabel}>DJ PROFIL</Text>
+            <Text style={styles.djProfileArrow}>→</Text>
+          </Pressable>
           <InfoRow
             label="DATE"
             value={`${formatDate(event.date)} · ${event.startTime}${
@@ -361,6 +370,28 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'right',
     lineHeight: 18,
+  },
+
+  // DJ profile row
+  djProfileRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 12,
+    minHeight: 44,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  djProfileLabel: {
+    fontSize: theme.font.sizes.xs,
+    fontWeight: theme.font.weights.semibold,
+    letterSpacing: theme.font.letterSpacing.wider,
+    color: theme.colors.textTertiary,
+  },
+  djProfileArrow: {
+    fontSize: theme.font.sizes.md,
+    color: theme.colors.textSecondary,
   },
 
   // Description

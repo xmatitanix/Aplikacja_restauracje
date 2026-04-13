@@ -122,8 +122,7 @@ export default function RateScreen() {
     };
 
     await saveRating(rating);
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.replace('/(tabs)');
+    router.replace(`/rate-result/${event!.id}`);
   }
 
   function canProceed(): boolean {
