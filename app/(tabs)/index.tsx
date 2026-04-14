@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -40,9 +41,24 @@ export default function HomeScreen() {
   const [sortBy, setSortBy] = useState<SortBy>('recent');
   const [onlyUnrated, setOnlyUnrated] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { getRatedCount, hasRated, getStreak } = useRatings();
   const streak = getStreak();
   const { events: submittedEvents } = useSubmittedEvents();
+
+  const handleSearchChange = useCallback((text: string) => {
+    setSearchQuery(text);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => setDebouncedQuery(text), 150);
+  }, []);
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery('');
+    setDebouncedQuery('');
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+  }, []);
 
   const handleCitySelect = useCallback((city: CityId | 'all') => {
     setSelectedCity(city);
@@ -113,10 +129,23 @@ export default function HomeScreen() {
   }, [availableGenres, cityEvents]);
 
   const hasActiveFilters =
-    selectedCity !== 'all' || selectedMacro !== 'all' || onlyUnrated || selectedTags.length > 0;
+    selectedCity !== 'all' ||
+    selectedMacro !== 'all' ||
+    onlyUnrated ||
+    selectedTags.length > 0 ||
+    debouncedQuery.trim().length > 0;
 
   const events = useMemo(() => {
     let list = cityEvents;
+
+    if (debouncedQuery.trim().length > 0) {
+      const q = debouncedQuery.toLowerCase().trim();
+      list = list.filter(
+        (e) =>
+          e.djName.toLowerCase().includes(q) ||
+          e.venueName.toLowerCase().includes(q)
+      );
+    }
 
     if (selectedMacro !== 'all') {
       const macroSubs = GENRE_GROUPS[selectedMacro];
@@ -149,7 +178,7 @@ export default function HomeScreen() {
       );
     }
     return sorted;
-  }, [cityEvents, selectedMacro, selectedSubGenre, selectedTags, onlyUnrated, hasRated, sortBy]);
+  }, [cityEvents, debouncedQuery, selectedMacro, selectedSubGenre, selectedTags, onlyUnrated, hasRated, sortBy]);
 
   const showFeatured =
     selectedCity === 'all' &&
@@ -159,7 +188,9 @@ export default function HomeScreen() {
     !!featured;
 
   const listLabel =
-    sortBy === 'rating'
+    debouncedQuery.trim().length > 0
+      ? `WYNIKI: "${debouncedQuery.trim().toUpperCase()}"`
+      : sortBy === 'rating'
       ? 'TOP RATED'
       : sortBy === 'popular'
       ? 'MOST POPULAR'
@@ -184,7 +215,8 @@ export default function HomeScreen() {
     setSelectedSubGenre(null);
     setSelectedTags([]);
     setOnlyUnrated(false);
-  }, []);
+    clearSearch();
+  }, [clearSearch]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -225,6 +257,11 @@ export default function HomeScreen() {
 
         {/* Child 1: Sticky filter area */}
         <View style={styles.filterArea}>
+          <SearchBar
+            value={searchQuery}
+            onChange={handleSearchChange}
+            onClear={clearSearch}
+          />
           <CityFilter
             selected={selectedCity}
             onSelect={handleCitySelect}
@@ -280,9 +317,13 @@ export default function HomeScreen() {
 
           {events.length === 0 ? (
             <View style={styles.empty}>
-              <Text style={styles.emptyText}>NO SETS</Text>
+              <Text style={styles.emptyText}>
+                {debouncedQuery ? 'NO MATCH' : 'NO SETS'}
+              </Text>
               <Text style={styles.emptySubtext}>
-                Brak setów dla wybranych filtrów
+                {debouncedQuery
+                  ? `Brak setów dla "${debouncedQuery}"`
+                  : 'Brak setów dla wybranych filtrów'}
               </Text>
             </View>
           ) : (
@@ -308,6 +349,44 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function SearchBar({
+  value,
+  onChange,
+  onClear,
+}: {
+  value: string;
+  onChange: (t: string) => void;
+  onClear: () => void;
+}) {
+  return (
+    <View style={searchStyles.wrapper}>
+      <Text style={searchStyles.prefix}>// SZUKAJ</Text>
+      <View style={searchStyles.row}>
+        <TextInput
+          style={searchStyles.input}
+          value={value}
+          onChangeText={onChange}
+          placeholder="DJ, venue..."
+          placeholderTextColor={theme.colors.textTertiary}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+          maxLength={80}
+        />
+        {value.length > 0 && (
+          <Pressable
+            style={searchStyles.clearBtn}
+            onPress={onClear}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={searchStyles.clearBtnText}>×</Text>
+          </Pressable>
+        )}
+      </View>
+    </View>
   );
 }
 
@@ -538,5 +617,51 @@ const styles = StyleSheet.create({
     fontSize: theme.font.sizes.xl,
     color: theme.colors.textTertiary,
     fontWeight: theme.font.weights.black,
+  },
+});
+
+const searchStyles = StyleSheet.create({
+  wrapper: {
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+    paddingTop: theme.spacing.xs,
+    paddingBottom: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+  },
+  prefix: {
+    fontSize: 10,
+    letterSpacing: theme.font.letterSpacing.wider,
+    color: theme.colors.textTertiary,
+    fontWeight: theme.font.weights.semibold,
+    marginBottom: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    minHeight: 40,
+  },
+  input: {
+    flex: 1,
+    fontSize: theme.font.sizes.md,
+    color: theme.colors.text,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+  },
+  clearBtn: {
+    paddingHorizontal: theme.spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 36,
+    height: 40,
+  },
+  clearBtnText: {
+    fontSize: 20,
+    color: theme.colors.textSecondary,
+    lineHeight: 24,
+    fontWeight: theme.font.weights.semibold,
   },
 });

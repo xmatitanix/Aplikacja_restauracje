@@ -9,6 +9,7 @@ import {
   getTopRatedEvents,
   MOCK_EVENTS,
 } from '../../data/events';
+import { useAchievements } from '../../hooks/useAchievements';
 import { useRatings } from '../../hooks/useRatings';
 
 // Static data — computed once, never changes
@@ -24,6 +25,7 @@ export default function LeaderboardScreen() {
   const router = useRouter();
   const { ratings, getRatedCount } = useRatings();
   const myRatingsArr = Object.values(ratings) as { overall: number; wasPresent: boolean }[];
+  const { achievements, earnedIds, ready: achievementsReady } = useAchievements();
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -130,6 +132,39 @@ export default function LeaderboardScreen() {
                 }
                 last
               />
+            </View>
+          </>
+        )}
+
+        {/* Achievements */}
+        {achievementsReady && (
+          <>
+            <SectionHeader
+              label="ODZNAKI"
+              sublabel={`${earnedIds.size} / ${achievements.length} odblokowane`}
+              decoration="勲章"
+            />
+            <View style={styles.badgeGrid}>
+              {achievements.map((a) => {
+                const earned = earnedIds.has(a.id);
+                return (
+                  <View
+                    key={a.id}
+                    style={[styles.badge, earned && styles.badgeEarned]}
+                  >
+                    <Text style={styles.badgeEmoji}>{earned ? a.emoji : '🔒'}</Text>
+                    <Text
+                      style={[styles.badgeName, !earned && styles.badgeNameLocked]}
+                      numberOfLines={2}
+                    >
+                      {a.name}
+                    </Text>
+                    <Text style={styles.badgeDesc} numberOfLines={2}>
+                      {a.description}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
           </>
         )}
@@ -278,4 +313,51 @@ const styles = StyleSheet.create({
   },
 
   footer: { height: theme.spacing.xxxl },
+
+  badgeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+  },
+  badge: {
+    width: '33.33%',
+    padding: theme.spacing.sm,
+    alignItems: 'center',
+    borderWidth: 0.5,
+    borderColor: theme.colors.border,
+    opacity: 0.3,
+    minHeight: 96,
+    justifyContent: 'center',
+  },
+  badgeEarned: {
+    opacity: 1,
+  },
+  badgeEmoji: {
+    fontSize: 24,
+    lineHeight: 30,
+    marginBottom: 4,
+  },
+  badgeName: {
+    fontSize: theme.font.sizes.xs,
+    fontWeight: theme.font.weights.black,
+    letterSpacing: theme.font.letterSpacing.wide,
+    color: theme.colors.text,
+    textAlign: 'center',
+    lineHeight: 14,
+  },
+  badgeNameLocked: {
+    color: theme.colors.textTertiary,
+  },
+  badgeDesc: {
+    fontSize: 9,
+    color: theme.colors.textTertiary,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    lineHeight: 13,
+    marginTop: 2,
+  },
 });

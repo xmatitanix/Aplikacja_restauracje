@@ -1,10 +1,12 @@
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AchievementUnlockModal } from '../../components/AchievementUnlockModal';
 import { theme } from '../../constants/theme';
 import { getEventById } from '../../data/events';
+import { useAchievements } from '../../hooks/useAchievements';
 import { useEventRatings } from '../../hooks/useEventRatings';
 import { useRatings } from '../../hooks/useRatings';
 import { isValidEventId } from '../../types';
@@ -13,9 +15,12 @@ export default function RateResultScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { getRating, getStreak } = useRatings();
+  const { newlyUnlocked, markAllSeen } = useAchievements();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.85)).current;
+  const hasShownRef = useRef(false);
+  const [showAchModal, setShowAchModal] = useState(false);
 
   useEffect(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -33,6 +38,19 @@ export default function RateResultScreen() {
       }),
     ]).start();
   }, []);
+
+  useEffect(() => {
+    if (!hasShownRef.current && newlyUnlocked.length > 0) {
+      hasShownRef.current = true;
+      const t = setTimeout(() => setShowAchModal(true), 800);
+      return () => clearTimeout(t);
+    }
+  }, [newlyUnlocked]);
+
+  const handleDismissAchModal = useCallback(async () => {
+    setShowAchModal(false);
+    await markAllSeen();
+  }, [markAllSeen]);
 
   if (!isValidEventId(id)) {
     router.replace('/(tabs)');
@@ -183,6 +201,12 @@ export default function RateResultScreen() {
           </Pressable>
         </Animated.View>
       </ScrollView>
+
+      <AchievementUnlockModal
+        achievements={newlyUnlocked}
+        visible={showAchModal}
+        onDismiss={handleDismissAchModal}
+      />
     </SafeAreaView>
   );
 }
