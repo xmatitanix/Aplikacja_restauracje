@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { VIBE_TAGS } from '../data/events';
 import { supabase } from '../lib/supabase';
-import { Rating } from '../types';
+import { Rating, isValidEventId } from '../types';
 
 export function useRatings() {
   const { user } = useAuth();
@@ -53,6 +54,9 @@ export function useRatings() {
   const saveRating = useCallback(
     async (rating: Rating) => {
       if (!user) return;
+      if (!isValidEventId(rating.eventId)) return;
+
+      const safeTags = (rating.tags ?? []).filter((t) => VIBE_TAGS.includes(t));
 
       const { error } = await supabase.from('ratings').upsert(
         {
@@ -63,7 +67,7 @@ export function useRatings() {
           selection_style: rating.selectionStyle ?? null,
           mix_quality: rating.mixQuality ?? null,
           crowd_sync: rating.crowdSync ?? null,
-          tags: rating.tags,
+          tags: safeTags,
           was_present: rating.wasPresent,
           age_group: rating.ageGroup ?? null,
         },

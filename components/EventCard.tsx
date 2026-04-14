@@ -1,3 +1,4 @@
+import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { theme } from '../constants/theme';
 import { getCityName, formatDate } from '../data/events';
@@ -11,7 +12,7 @@ interface Props {
   isUserAdded?: boolean;
 }
 
-export function EventCard({ event, onPress, variant = 'default', index = 0, isUserAdded = false }: Props) {
+export const EventCard = React.memo(function EventCard({ event, onPress, variant = 'default', index = 0, isUserAdded = false }: Props) {
   const num = String(index + 1).padStart(3, '0');
   const topTag = getTopTag(event);
 
@@ -165,7 +166,7 @@ export function EventCard({ event, onPress, variant = 'default', index = 0, isUs
       </View>
     </Pressable>
   );
-}
+});
 
 function getTopTag(event: DJEvent): string | null {
   const entries = Object.entries(event.ratingData.tagCounts);

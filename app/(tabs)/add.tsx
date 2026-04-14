@@ -15,7 +15,7 @@ import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../constants/theme';
 import { CITIES, GENRE_GROUPS } from '../../data/events';
 import { useSubmittedEvents } from '../../hooks/useSubmittedEvents';
-import { AggregatedRatings, CityId, DJEvent, EnergyArc } from '../../types';
+import { AggregatedRatings, CityId, DJEvent, EnergyArc, sanitizeActName } from '../../types';
 
 const EMPTY_RATING: AggregatedRatings = {
   count: 0,
@@ -66,7 +66,10 @@ export default function AddScreen() {
 
   const canSubmit =
     djName.trim().length > 0 &&
+    djName.trim().length <= 100 &&
     venueName.trim().length > 0 &&
+    venueName.trim().length <= 100 &&
+    description.trim().length <= 500 &&
     city !== null &&
     date.trim().length > 0 &&
     startTime.trim().length > 0 &&
@@ -77,8 +80,8 @@ export default function AddScreen() {
 
     const event: DJEvent = {
       id: `user_${Date.now()}`,
-      djName: djName.trim(),
-      venueName: venueName.trim(),
+      djName: sanitizeActName(djName),
+      venueName: sanitizeActName(venueName),
       city,
       date: date.trim(),
       startTime: startTime.trim(),
@@ -86,10 +89,10 @@ export default function AddScreen() {
       supportingActs: supportingActs.trim()
         ? supportingActs
             .split(',')
-            .map((s) => s.trim())
+            .map((s) => sanitizeActName(s))
             .filter(Boolean)
         : undefined,
-      description: description.trim() || undefined,
+      description: description.trim().slice(0, 500) || undefined,
       ratingData: EMPTY_RATING,
       createdAt: Date.now(),
     };

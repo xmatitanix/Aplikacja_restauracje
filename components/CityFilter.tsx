@@ -1,3 +1,4 @@
+import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { theme } from '../constants/theme';
 import { CITIES } from '../data/events';
@@ -9,7 +10,7 @@ interface Props {
   eventCounts?: Record<string, number>;
 }
 
-export function CityFilter({ selected, onSelect, eventCounts }: Props) {
+export const CityFilter = React.memo(function CityFilter({ selected, onSelect, eventCounts }: Props) {
   const total = eventCounts
     ? Object.values(eventCounts).reduce((s, n) => s + n, 0)
     : undefined;
@@ -40,7 +41,7 @@ export function CityFilter({ selected, onSelect, eventCounts }: Props) {
       </ScrollView>
     </View>
   );
-}
+});
 
 function CityPill({
   label,

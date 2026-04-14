@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useMemo } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { theme } from '../constants/theme';
 import { ENERGY_ARCS } from '../data/events';
 import { AGE_GROUPS, AggregatedRatings, EnergyArc } from '../types';
@@ -12,7 +13,7 @@ export function RatingDisplay({ data }: Props) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6);
 
-  const dominantArc = getDominantArc(data.energyArcDist);
+  const dominantArc = useMemo(() => getDominantArc(data.energyArcDist), [data.energyArcDist]);
   const arcInfo = ENERGY_ARCS.find((a) => a.id === dominantArc);
 
   return (
@@ -319,7 +320,7 @@ const styles = StyleSheet.create({
   arcShape: {
     fontSize: theme.font.sizes.sm,
     color: theme.colors.textTertiary,
-    fontFamily: 'monospace',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     flexShrink: 0,
     minWidth: 44,
   },

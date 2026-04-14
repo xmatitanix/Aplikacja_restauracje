@@ -1,3 +1,4 @@
+import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { theme } from '../constants/theme';
 
@@ -7,7 +8,7 @@ interface Props {
   onToggle: (tag: string) => void;
 }
 
-export function VibeTagFilter({ tags, selectedTags, onToggle }: Props) {
+export const VibeTagFilter = React.memo(function VibeTagFilter({ tags, selectedTags, onToggle }: Props) {
   if (tags.length === 0) return null;
 
   return (
@@ -40,7 +41,7 @@ export function VibeTagFilter({ tags, selectedTags, onToggle }: Props) {
       </ScrollView>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrapper: {

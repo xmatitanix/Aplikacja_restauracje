@@ -1,3 +1,4 @@
+import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { theme } from '../constants/theme';
 
@@ -11,7 +12,7 @@ interface Props {
   macroCounts?: Record<string, number>;
 }
 
-export function GenreFilter({
+export const GenreFilter = React.memo(function GenreFilter({
   macros,
   selectedMacro,
   onSelectMacro,
@@ -101,7 +102,7 @@ export function GenreFilter({
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   macroWrapper: {

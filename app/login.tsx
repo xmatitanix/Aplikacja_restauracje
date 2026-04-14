@@ -36,7 +36,8 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [registered, setRegistered] = useState(false);
 
-  const canSubmit = email.includes('@') && password.length >= 6 && !loading;
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const canSubmit = EMAIL_RE.test(email.trim()) && password.length >= 6 && !loading;
 
   async function handleSubmit() {
     if (!canSubmit) return;

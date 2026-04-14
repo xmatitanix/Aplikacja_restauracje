@@ -262,7 +262,7 @@ export default function HomeScreen() {
         <View>
           {showFeatured && (
             <>
-              <SectionHeader label="FEATURED SET" decoration="精選" />
+              <SectionHeader label="POLECANY SET" decoration="精選" />
               <EventCard
                 event={featured}
                 variant="featured"
