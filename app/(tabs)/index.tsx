@@ -13,6 +13,7 @@ import { CityFilter } from '../../components/CityFilter';
 import { EventCard } from '../../components/EventCard';
 import { GenreFilter } from '../../components/GenreFilter';
 import { SectionHeader } from '../../components/SectionHeader';
+import { VibeTagFilter } from '../../components/VibeTagFilter';
 import { theme } from '../../constants/theme';
 import {
   GENRE_GROUPS,
@@ -35,6 +36,7 @@ export default function HomeScreen() {
   const [selectedCity, setSelectedCity] = useState<CityId | 'all'>('all');
   const [selectedMacro, setSelectedMacro] = useState<string>('all');
   const [selectedSubGenre, setSelectedSubGenre] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortBy>('recent');
   const [onlyUnrated, setOnlyUnrated] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -46,6 +48,7 @@ export default function HomeScreen() {
     setSelectedCity(city);
     setSelectedMacro('all');
     setSelectedSubGenre(null);
+    setSelectedTags([]);
   }, []);
 
   const handleMacroSelect = useCallback((macro: string) => {
@@ -84,6 +87,19 @@ export default function HomeScreen() {
     return counts;
   }, []);
 
+  // Tagi dostępne w aktualnym zbiorze eventów (posortowane po popularności)
+  const availableTags = useMemo(() => {
+    const counts: Record<string, number> = {};
+    cityEvents.forEach((e) =>
+      Object.entries(e.ratingData.tagCounts).forEach(([tag, n]) => {
+        counts[tag] = (counts[tag] ?? 0) + n;
+      })
+    );
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([tag]) => tag);
+  }, [cityEvents]);
+
   // Liczniki per makro-gatunek (w aktualnym mieście)
   const macroCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -97,7 +113,7 @@ export default function HomeScreen() {
   }, [availableGenres, cityEvents]);
 
   const hasActiveFilters =
-    selectedCity !== 'all' || selectedMacro !== 'all' || onlyUnrated;
+    selectedCity !== 'all' || selectedMacro !== 'all' || onlyUnrated || selectedTags.length > 0;
 
   const events = useMemo(() => {
     let list = cityEvents;
@@ -110,6 +126,12 @@ export default function HomeScreen() {
       if (selectedSubGenre) {
         list = list.filter((e) => e.genres.includes(selectedSubGenre));
       }
+    }
+
+    if (selectedTags.length > 0) {
+      list = list.filter((e) =>
+        selectedTags.some((t) => (e.ratingData.tagCounts[t] ?? 0) > 0)
+      );
     }
 
     if (onlyUnrated) {
@@ -127,7 +149,7 @@ export default function HomeScreen() {
       );
     }
     return sorted;
-  }, [cityEvents, selectedMacro, selectedSubGenre, onlyUnrated, hasRated, sortBy]);
+  }, [cityEvents, selectedMacro, selectedSubGenre, selectedTags, onlyUnrated, hasRated, sortBy]);
 
   const showFeatured =
     selectedCity === 'all' &&
@@ -160,6 +182,7 @@ export default function HomeScreen() {
     setSelectedCity('all');
     setSelectedMacro('all');
     setSelectedSubGenre(null);
+    setSelectedTags([]);
     setOnlyUnrated(false);
   }, []);
 
@@ -215,6 +238,15 @@ export default function HomeScreen() {
             selectedSubGenre={selectedSubGenre}
             onSelectSubGenre={setSelectedSubGenre}
             macroCounts={macroCounts}
+          />
+          <VibeTagFilter
+            tags={availableTags}
+            selectedTags={selectedTags}
+            onToggle={(tag) =>
+              setSelectedTags((prev) =>
+                prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+              )
+            }
           />
           <SortBar
             sortBy={sortBy}

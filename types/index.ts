@@ -48,10 +48,10 @@ export type EnergyArc =
 export interface Rating {
   eventId: string;
   overall: 1 | 2 | 3 | 4 | 5;
-  energyArc: EnergyArc;
-  selectionStyle: -2 | -1 | 0 | 1 | 2;
-  mixQuality: 1 | 2 | 3 | 4 | 5;
-  crowdSync: 1 | 2 | 3 | 4 | 5;
+  energyArc?: EnergyArc;
+  selectionStyle?: -2 | -1 | 0 | 1 | 2;
+  mixQuality?: 1 | 2 | 3 | 4 | 5;
+  crowdSync?: 1 | 2 | 3 | 4 | 5;
   tags: string[];
   wasPresent: boolean;
   ageGroup?: AgeGroup;

@@ -4,10 +4,10 @@ import { AggregatedRatings, EnergyArc } from '../types';
 
 type RawRow = {
   overall: number;
-  energy_arc: string;
-  selection_style: number;
-  mix_quality: number;
-  crowd_sync: number;
+  energy_arc: string | null;
+  selection_style: number | null;
+  mix_quality: number | null;
+  crowd_sync: number | null;
   tags: string[] | null;
   was_present: boolean;
   age_group: string | null;
@@ -26,13 +26,29 @@ function aggregate(rows: RawRow[]): AggregatedRatings {
     afterburner: 0,
   };
   rows.forEach((r) => {
-    const arc = r.energy_arc as EnergyArc;
-    if (arc in energyArcDist) energyArcDist[arc]++;
+    if (r.energy_arc) {
+      const arc = r.energy_arc as EnergyArc;
+      if (arc in energyArcDist) energyArcDist[arc]++;
+    }
   });
 
-  const avgSelectionStyle = rows.reduce((s, r) => s + r.selection_style, 0) / count;
-  const avgMixQuality = rows.reduce((s, r) => s + r.mix_quality, 0) / count;
-  const avgCrowdSync = rows.reduce((s, r) => s + r.crowd_sync, 0) / count;
+  const nonNullSel = rows.filter((r) => r.selection_style != null);
+  const avgSelectionStyle =
+    nonNullSel.length > 0
+      ? nonNullSel.reduce((s, r) => s + r.selection_style!, 0) / nonNullSel.length
+      : 0;
+
+  const nonNullMix = rows.filter((r) => r.mix_quality != null);
+  const avgMixQuality =
+    nonNullMix.length > 0
+      ? nonNullMix.reduce((s, r) => s + r.mix_quality!, 0) / nonNullMix.length
+      : 0;
+
+  const nonNullSync = rows.filter((r) => r.crowd_sync != null);
+  const avgCrowdSync =
+    nonNullSync.length > 0
+      ? nonNullSync.reduce((s, r) => s + r.crowd_sync!, 0) / nonNullSync.length
+      : 0;
 
   const presentCount = rows.filter((r) => r.was_present).length;
   const presentPct = Math.round((presentCount / count) * 100);

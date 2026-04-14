@@ -15,8 +15,10 @@ import { ENERGY_ARCS, getEventById, VIBE_TAGS } from '../../data/events';
 import { useRatings } from '../../hooks/useRatings';
 import { AGE_GROUPS, AgeGroup, EnergyArc, Rating } from '../../types';
 
-const STEPS = ['overall', 'energy', 'selection', 'mix', 'tags', 'age', 'presence'] as const;
-type Step = typeof STEPS[number];
+const ALL_STEPS = ['overall', 'energy', 'selection', 'mix', 'tags', 'age', 'presence'] as const;
+const QUICK_STEPS = ['overall', 'presence'] as const;
+type Step = typeof ALL_STEPS[number];
+type RatingMode = 'quick' | 'full';
 
 const STEP_LABELS: Record<Step, string> = {
   overall: 'OVERALL VIBE',
@@ -44,6 +46,7 @@ export default function RateScreen() {
   const { saveRating } = useRatings();
   const event = getEventById(id);
 
+  const [ratingMode, setRatingMode] = useState<RatingMode | null>(null);
   const [step, setStep] = useState<Step>('overall');
   const [overall, setOverall] = useState<1 | 2 | 3 | 4 | 5 | null>(null);
   const [energyArc, setEnergyArc] = useState<EnergyArc | null>(null);
@@ -53,10 +56,11 @@ export default function RateScreen() {
   const [ageGroup, setAgeGroup] = useState<AgeGroup | null>(null);
   const [wasPresent, setWasPresent] = useState<boolean | null>(null);
 
-  const stepIndex = STEPS.indexOf(step);
-  const progress = (stepIndex / (STEPS.length - 1)) * 100;
+  const steps: readonly Step[] = ratingMode === 'quick' ? QUICK_STEPS : ALL_STEPS;
+  const stepIndex = steps.indexOf(step);
+  const progress = ratingMode === null ? 0 : (stepIndex / (steps.length - 1)) * 100;
 
-  const progressAnim = useRef(new Animated.Value(progress)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.spring(progressAnim, {
@@ -82,43 +86,43 @@ export default function RateScreen() {
     );
   }
 
+  function selectMode(mode: RatingMode) {
+    setRatingMode(mode);
+    setStep('overall');
+  }
+
   function goNext() {
-    const idx = STEPS.indexOf(step);
-    if (idx < STEPS.length - 1) {
-      const next = STEPS[idx + 1];
-      setStep(next);
+    const idx = steps.indexOf(step);
+    if (idx < steps.length - 1) {
+      setStep(steps[idx + 1]);
     }
   }
 
   function goBack() {
-    const idx = STEPS.indexOf(step);
+    const idx = steps.indexOf(step);
     if (idx > 0) {
-      const prev = STEPS[idx - 1];
-      setStep(prev);
+      setStep(steps[idx - 1]);
     } else {
-      router.back();
+      // Back to mode selection
+      setRatingMode(null);
     }
   }
 
   async function submit() {
-    if (
-      overall === null ||
-      energyArc === null ||
-      selectionStyle === null ||
-      mixQuality === null ||
-      wasPresent === null
-    )
-      return;
+    if (overall === null || wasPresent === null) return;
+    if (ratingMode === 'full' && (energyArc === null || selectionStyle === null || mixQuality === null)) return;
 
-    const crowdSync = Math.round((overall + mixQuality) / 2) as 1 | 2 | 3 | 4 | 5;
+    const crowdSync = mixQuality != null
+      ? (Math.round((overall + mixQuality) / 2) as 1 | 2 | 3 | 4 | 5)
+      : undefined;
 
     const rating: Rating = {
       eventId: event!.id,
       overall,
-      energyArc,
-      selectionStyle,
-      mixQuality,
-      crowdSync,
+      ...(energyArc != null ? { energyArc } : {}),
+      ...(selectionStyle != null ? { selectionStyle } : {}),
+      ...(mixQuality != null ? { mixQuality } : {}),
+      ...(crowdSync != null ? { crowdSync } : {}),
       tags: selectedTags,
       wasPresent,
       ...(ageGroup ? { ageGroup } : {}),
@@ -136,9 +140,73 @@ export default function RateScreen() {
       case 'selection': return selectionStyle !== null;
       case 'mix': return mixQuality !== null;
       case 'tags': return true;
-      case 'age': return true; // optional
+      case 'age': return true;
       case 'presence': return wasPresent !== null;
     }
+  }
+
+  // Mode selection screen
+  if (ratingMode === null) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: '0%' }]} />
+        </View>
+        <View style={styles.stepHeader}>
+          <Text style={styles.stepDJ}>{event.djName}</Text>
+          <Text style={styles.stepNum}>{event.venueName}</Text>
+        </View>
+
+        <ScrollView style={styles.content} contentContainerStyle={styles.contentInner}>
+          <View style={styles.modeContainer}>
+            <Text style={styles.modeTitle}>JAK CHCESZ OCENIĆ?</Text>
+            <Text style={styles.modeSubtitle}>
+              Wybierz tryb oceny — możesz zmienić zdanie przed wysłaniem.
+            </Text>
+
+            <Pressable
+              style={({ pressed }) => [styles.modeCard, pressed && styles.modeCardPressed]}
+              onPress={() => selectMode('quick')}
+            >
+              <View style={styles.modeCardHeader}>
+                <Text style={styles.modeCardTitle}>SZYBKA OCENA</Text>
+                <Text style={styles.modeCardSteps}>2 KROKI</Text>
+              </View>
+              <Text style={styles.modeCardDesc}>
+                Twoje ogólne wrażenie i czy byłeś/byłaś na miejscu. Idealnie jeśli po prostu chcesz dać ocenę.
+              </Text>
+              <View style={styles.modeCardFooter}>
+                <Text style={styles.modeCardTag}>DLA KAŻDEGO</Text>
+                <Text style={styles.modeCardArrow}>→</Text>
+              </View>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [styles.modeCard, styles.modeCardFull, pressed && styles.modeCardPressed]}
+              onPress={() => selectMode('full')}
+            >
+              <View style={styles.modeCardHeader}>
+                <Text style={[styles.modeCardTitle, styles.modeCardTitleFull]}>SZCZEGÓŁOWA</Text>
+                <Text style={[styles.modeCardSteps, styles.modeCardStepsFull]}>7 KROKÓW</Text>
+              </View>
+              <Text style={[styles.modeCardDesc, styles.modeCardDescFull]}>
+                Energy arc, mix quality, selection style, tagi vibes — pełna analiza dla koneserów.
+              </Text>
+              <View style={styles.modeCardFooter}>
+                <Text style={[styles.modeCardTag, styles.modeCardTagFull]}>DLA KONESERÓW</Text>
+                <Text style={[styles.modeCardArrow, styles.modeCardArrowFull]}>→</Text>
+              </View>
+            </Pressable>
+          </View>
+        </ScrollView>
+
+        <View style={styles.nav}>
+          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+            <Text style={styles.backBtnText}>←</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -153,7 +221,7 @@ export default function RateScreen() {
         <Text style={styles.stepDJ}>{event.djName}</Text>
         <View style={styles.stepMeta}>
           <Text style={styles.stepNum}>
-            {String(stepIndex + 1).padStart(2, '0')}/{STEPS.length}
+            {String(stepIndex + 1).padStart(2, '0')}/{steps.length}
           </Text>
           <Text style={styles.stepKana}>{STEP_KANA[step]}</Text>
         </View>
@@ -634,6 +702,82 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
+
+  // Mode selection
+  modeContainer: {
+    padding: theme.spacing.md,
+    gap: theme.spacing.md,
+  },
+  modeTitle: {
+    fontSize: theme.font.sizes.xl,
+    fontWeight: theme.font.weights.black,
+    letterSpacing: theme.font.letterSpacing.widest,
+    color: theme.colors.text,
+    marginTop: theme.spacing.sm,
+  },
+  modeSubtitle: {
+    fontSize: theme.font.sizes.sm,
+    color: theme.colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: theme.spacing.sm,
+  },
+  modeCard: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.sm,
+  },
+  modeCardFull: {
+    borderColor: theme.colors.text,
+    backgroundColor: theme.colors.text,
+  },
+  modeCardPressed: { opacity: 0.75 },
+  modeCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modeCardTitle: {
+    fontSize: theme.font.sizes.lg,
+    fontWeight: theme.font.weights.black,
+    letterSpacing: theme.font.letterSpacing.widest,
+    color: theme.colors.text,
+  },
+  modeCardTitleFull: { color: theme.colors.white },
+  modeCardSteps: {
+    fontSize: theme.font.sizes.xs,
+    fontWeight: theme.font.weights.bold,
+    letterSpacing: theme.font.letterSpacing.wider,
+    color: theme.colors.textTertiary,
+    fontVariant: ['tabular-nums'],
+  },
+  modeCardStepsFull: { color: 'rgba(255,255,255,0.5)' },
+  modeCardDesc: {
+    fontSize: theme.font.sizes.sm,
+    color: theme.colors.textSecondary,
+    lineHeight: 20,
+  },
+  modeCardDescFull: { color: 'rgba(255,255,255,0.7)' },
+  modeCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: theme.spacing.xs,
+  },
+  modeCardTag: {
+    fontSize: 10,
+    fontWeight: theme.font.weights.bold,
+    letterSpacing: theme.font.letterSpacing.wider,
+    color: theme.colors.textTertiary,
+  },
+  modeCardTagFull: { color: 'rgba(255,255,255,0.4)' },
+  modeCardArrow: {
+    fontSize: theme.font.sizes.lg,
+    color: theme.colors.text,
+    fontWeight: theme.font.weights.bold,
+  },
+  modeCardArrowFull: { color: theme.colors.white },
 
   // Overall orbs
   orbRow: {
